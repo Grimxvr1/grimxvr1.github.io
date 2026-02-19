@@ -178,7 +178,7 @@
     font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.12em;
     color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   }
-  .gm-warrior-row.dead .gm-warrior-name { color: rgba(139,26,26,0.8); text-decoration: line-through; }
+  .gm-warrior-row.dead .gm-warrior-name { color: rgba(195,68,68,1); }
   .gm-revive-btn {
     width: 26px; height: 26px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
@@ -202,7 +202,7 @@
     padding: 3px 10px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; transition: all 0.4s;
   }
   .chip-alive { background: rgba(201,168,76,0.08); color: var(--gold); border: 1px solid rgba(201,168,76,0.22); }
-  .chip-dead  { background: rgba(139,26,26,0.07); color: rgba(139,26,26,0.5); border: 1px solid rgba(139,26,26,0.14); text-decoration: line-through; }
+  .chip-dead  { background: rgba(139,26,26,0.07); color: rgba(195,68,68,1); border: 1px solid rgba(139,26,26,0.14); }
 
   /* Round block */
   .round-block { margin-bottom: 24px; transition: opacity 0.6s ease; border: 1px solid rgba(201,168,76,0.12); border-radius: 2px; overflow: hidden; }
@@ -800,8 +800,9 @@ async function runRound() {
       <div class="event-who">
         <div class="event-who-name">${ev.warrior.name}</div>
         <div class="event-who-class">${ev.warrior.cls}</div>
+        <span class="event-tag tag-${ev.type}">${lbl}</span>
       </div>
-      <div class="event-body"><span class="event-tag tag-${ev.type}">${lbl}</span>${ev.text}</div>
+      <div class="event-body">${ev.text}</div>
     </div>`;
   }).join('');
 
