@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Iron Harvest — Gothic Medieval Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #7a5f2a;
+    --blood: #8b1a1a;
+    --ash: #1a1714;
+    --parchment: #e8dcc8;
+    --ember: #d4622a;
+    --text: #d4c9b0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ash);
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.35;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%);
+    pointer-events: none; z-index: 999;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+
+  /* Header */
+  header { text-align: center; padding: 48px 0 32px; }
+
+  .flame-divider { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 20px; }
+  .flame-line { height: 1px; width: 80px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .flame-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
+  .flame-icon { color: var(--ember); font-size: 20px; animation: flicker 2s ease-in-out infinite; }
+
+  @keyframes flicker {
+    0%,100% { opacity:1; transform:scaleY(1); }
+    50%      { opacity:0.65; transform:scaleY(0.88); }
+  }
+
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(22px, 5vw, 38px);
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.3);
+  }
+
+  .subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 11px; letter-spacing: 0.3em;
+    color: var(--gold-dim); margin-top: 10px; text-transform: uppercase;
+  }
+
+  /* Setup */
+  #setup-panel {
+    background: linear-gradient(135deg, rgba(42,37,32,0.92), rgba(26,23,20,0.96));
+    border: 1px solid var(--gold-dim); border-radius: 2px; padding: 32px; margin: 28px 0; position: relative;
+  }
+  #setup-panel::before {
+    content: ''; position: absolute; inset: 4px;
+    border: 1px solid rgba(201,168,76,0.07); pointer-events: none;
+  }
+  .panel-title {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.45em;
+    color: var(--gold-dim); text-transform: uppercase;
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+  }
+  .top-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 520px) { .top-row { grid-template-columns: 1fr; } }
+  label {
+    display: block; font-family: 'Cinzel', serif; font-size: 10px;
+    letter-spacing: 0.25em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 7px;
+  }
+  select {
+    width: 100%; background: rgba(0,0,0,0.45); border: 1px solid rgba(201,168,76,0.2);
+    color: var(--parchment); font-family: 'EB Garamond', serif; font-size: 15px;
+    padding: 9px 12px; border-radius: 2px; outline: none; transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--gold); background: rgba(0,0,0,0.65); }
+  select option { background: #1a1714; }
+  .warrior-name-section { border-top: 1px solid rgba(201,168,76,0.1); padding-top: 22px; }
+  .warrior-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; }
+  .warrior-card { background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.14); border-radius: 2px; overflow: hidden; }
+  .warrior-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 10px; background: rgba(201,168,76,0.05);
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+  .warrior-num-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.2em; color: var(--gold-dim); text-transform: uppercase; }
+  .class-badge {
+    font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 10px; color: var(--ember);
+    background: rgba(212,98,42,0.1); border: 1px solid rgba(212,98,42,0.2); white-space: nowrap;
+  }
+  .warrior-card input {
+    width: 100%; background: transparent; border: none; color: var(--parchment);
+    font-family: 'EB Garamond', serif; font-size: 15px; padding: 8px 10px; outline: none;
+  }
+  .warrior-card input::placeholder { color: rgba(212,200,176,0.32); }
+  .warrior-card input:focus { background: rgba(201,168,76,0.04); }
+  .warrior-card .keep-tag {
+    font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.15em;
+    color: rgba(122,95,42,0.65); text-transform: uppercase; padding: 0 10px 7px;
+  }
+  .btn-enter {
+    width: 100%; margin-top: 24px; padding: 15px;
+    background: linear-gradient(135deg, var(--blood), #5a0f0f);
+    border: 1px solid rgba(201,168,76,0.35); color: var(--gold);
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.35em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.3s;
+  }
+  .btn-enter:hover {
+    background: linear-gradient(135deg, #a01f1f, var(--blood));
+    border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4); letter-spacing: 0.44em;
+  }
+
+  /* Game */
+  #game-area { display: none; position: relative; }
+
+  .game-layout { display: flex; gap: 0; align-items: flex-start; position: relative; }
+
+  .game-main { flex: 1; min-width: 0; }
+
+  /* Game Master side panel — fixed on left, always visible from Day 1, floats over content */
+  #game-master-panel {
+    position: fixed; left: 12px; top: 24px; z-index: 2000;
+    width: 220px; min-width: 220px;
+    background: linear-gradient(135deg, rgba(42,37,32,0.95), rgba(26,23,20,0.98));
+    border: 1px solid var(--gold-dim); border-radius: 2px;
+    overflow: hidden; transition: width 0.3s ease, min-width 0.3s ease, left 0.3s ease;
+  }
+  #game-master-panel.collapsed {
+    width: 48px; min-width: 48px;
+  }
+  #game-master-panel.collapsed .gm-body,
+  #game-master-panel.collapsed .gm-warrior-list,
+  #game-master-panel.collapsed .gm-title { display: none; }
+  .gm-header {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.35em;
+    color: var(--parchment); text-transform: uppercase;
+    text-shadow: 0 0 8px rgba(201,168,76,0.5);
+    padding: 12px 14px; cursor: pointer; user-select: none;
+    background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(201,168,76,0.12);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gm-header:hover { background: rgba(201,168,76,0.06); }
+  .gm-toggle { font-size: 12px; color: var(--gold-dim); transition: transform 0.25s ease; }
+  #game-master-panel.collapsed .gm-toggle { transform: rotate(-90deg); }
+  #game-master-panel.collapsed .gm-header { border-bottom: none; }
+  .gm-body { padding: 10px 12px 14px; }
+  .gm-warrior-list { display: flex; flex-direction: column; gap: 6px; }
+  .gm-warrior-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 2px;
+    border: 1px solid rgba(201,168,76,0.1);
+  }
+  .gm-warrior-name {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.12em;
+    color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gm-warrior-row.dead .gm-warrior-name { color: rgba(139,26,26,0.8); text-decoration: line-through; }
+  .gm-revive-btn {
+    width: 26px; height: 26px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold); font-size: 12px; cursor: pointer; border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .gm-revive-btn:hover { background: rgba(201,168,76,0.3); border-color: var(--gold); }
+  .gm-revive-btn.hidden { display: none; }
+
+  .tracker {
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(201,168,76,0.12);
+    padding: 14px 18px; margin-bottom: 24px; border-radius: 2px;
+  }
+  .tracker-stats { display: flex; gap: 24px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .stat-chip { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.25em; color: var(--gold-dim); text-transform: uppercase; }
+  .stat-chip span { color: var(--gold); }
+  .warrior-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .warrior-chip {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.12em;
+    padding: 3px 10px; border-radius: 20px; text-transform: uppercase; white-space: nowrap; transition: all 0.4s;
+  }
+  .chip-alive { background: rgba(201,168,76,0.08); color: var(--gold); border: 1px solid rgba(201,168,76,0.22); }
+  .chip-dead  { background: rgba(139,26,26,0.07); color: rgba(139,26,26,0.5); border: 1px solid rgba(139,26,26,0.14); text-decoration: line-through; }
+
+  /* Round block */
+  .round-block { margin-bottom: 24px; transition: opacity 0.6s ease; border: 1px solid rgba(201,168,76,0.12); border-radius: 2px; overflow: hidden; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .round-header {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.5em;
+    color: var(--ember); text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; cursor: pointer; user-select: none;
+    background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(201,168,76,0.08);
+    transition: background 0.2s;
+  }
+  .round-header:hover { background: rgba(201,168,76,0.06); }
+  .round-header::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(212,98,42,0.4), transparent); }
+  .round-header .collapse-icon {
+    font-size: 12px; color: var(--gold-dim); transition: transform 0.25s ease;
+  }
+  .round-block.collapsed .collapse-icon { transform: rotate(-90deg); }
+  .round-block.collapsed .round-header { border-bottom: none; }
+
+  .round-body {
+    max-height: 4000px; overflow: hidden; transition: max-height 0.4s ease;
+  }
+  .round-block.collapsed .round-body { max-height: 0 !important; }
+  .round-body-inner { padding: 12px 14px 14px; }
+
+  .warrior-events { border: 1px solid rgba(201,168,76,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+  .round-body-inner .warrior-events { margin-bottom: 12px; }
+  .event-row { display: grid; grid-template-columns: 148px 1fr; border-bottom: 1px solid rgba(201,168,76,0.06); }
+  .event-row:last-child { border-bottom: none; }
+  .event-who {
+    padding: 10px 12px; border-right: 1px solid rgba(201,168,76,0.07);
+    display: flex; flex-direction: column; gap: 3px; justify-content: center;
+  }
+  .event-who-name { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); }
+  .event-who-class { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(212,98,42,0.55); }
+  .event-body { padding: 10px 14px; font-size: 15px; line-height: 1.55; color: var(--text); display: flex; align-items: flex-start; }
+  .event-tag {
+    display: inline-block; flex-shrink: 0; font-family: 'Cinzel', serif;
+    font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 2px; margin-right: 8px; margin-top: 2px;
+  }
+  .tag-action      { background: rgba(201,168,76,0.1); color: #a88030; border: 1px solid rgba(201,168,76,0.18); }
+  .tag-consequence { background: rgba(212,98,42,0.1); color: var(--ember); border: 1px solid rgba(212,98,42,0.2); }
+  .tag-death       { background: rgba(139,26,26,0.18); color: #c04040; border: 1px solid rgba(139,26,26,0.28); }
+
+  .round-summary {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.1);
+    border-left: 3px solid var(--gold-dim); padding: 13px 16px; border-radius: 0 2px 2px 0;
+  }
+  .summary-label { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.4em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 6px; }
+  .summary-text { font-style: italic; color: var(--parchment); line-height: 1.65; font-size: 16px; }
+  .deaths-banner { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em; color: #c04040; text-transform: uppercase; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(139,26,26,0.2); }
+
+  /* Status */
+  #status-area { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; min-height: 44px; }
+  .status-msg { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em; color: var(--gold-dim); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .btn-next {
+    padding: 10px 28px; background: rgba(42,37,32,0.8);
+    border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-next:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.07); }
+  .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Outcome */
+  .outcome-screen { text-align: center; padding: 56px 20px; animation: fadeIn 1s ease-out; }
+  .outcome-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(24px, 5vw, 40px); margin-bottom: 16px; }
+  .victory { color: var(--gold); text-shadow: 0 0 40px rgba(201,168,76,0.5); }
+  .champion-name { font-weight: bold; font-style: normal; color: var(--gold); font-size: 20px; margin-bottom: 16px; }
+  .outcome-text { font-style: italic; color: var(--text); max-width: 520px; margin: 0 auto 32px; line-height: 1.85; font-size: 17px; }
+  .btn-restart { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; padding: 12px 32px; cursor: pointer; border-radius: 2px; transition: all 0.3s; }
+  .btn-restart:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ═══════════════════════════════════════════════════════════════
+     BATTLE OVERLAY
+  ═══════════════════════════════════════════════════════════════ */
+  #battle-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1c0e06 0%, #0e0a07 55%, #050302 100%);
+    opacity: 0;
+  }
+
+  /* Vignette on overlay */
+  #battle-overlay::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%);
+  }
+
+  .battle-content {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .battle-day-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px; letter-spacing: 0.55em; text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 14px;
+    animation: b-pulse 1.2s ease-in-out infinite alternate;
+  }
+
+  .battle-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(20px, 4vw, 32px);
+    color: var(--gold);
+    letter-spacing: 0.07em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.45);
+    margin-bottom: 8px;
+    animation: b-pulse 0.9s ease-in-out infinite alternate;
+  }
+
+
+
+  /* Sword arena */
+  .battle-arena {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 8px;
+  }
+
+  .sword-left {
+    font-size: 72px;
+    line-height: 1;
+    user-select: none;
+    transform: rotate(-45deg);
+    filter: drop-shadow(0 0 10px rgba(201,168,76,0.5));
+  }
+
+  .sword-right {
+    font-size: 72px;
+    line-height: 1;
+    user-select: none;
+    transform: rotate(45deg) scaleX(-1);
+    filter: drop-shadow(0 0 10px rgba(201,168,76,0.5));
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--ash); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  /* Password Modal */
+  #password-modal {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #1c0e06 0%, #0e0a07 55%, #050302 100%);
+  }
+  #password-modal::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%);
+  }
+  .password-content {
+    position: relative; z-index: 1;
+    background: linear-gradient(135deg, rgba(42,37,32,0.95), rgba(26,23,20,0.98));
+    border: 1px solid var(--gold-dim); border-radius: 2px;
+    padding: 40px 32px; max-width: 450px; width: 90%;
+    text-align: center;
+  }
+  .password-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(20px, 4vw, 28px);
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.3);
+    margin-bottom: 8px;
+  }
+  .password-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 10px; letter-spacing: 0.3em;
+    color: var(--gold-dim); margin-bottom: 24px; text-transform: uppercase;
+  }
+  .password-input {
+    width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(201,168,76,0.3);
+    color: var(--parchment); font-family: 'EB Garamond', serif; font-size: 16px;
+    padding: 12px 16px; border-radius: 2px; outline: none; transition: border-color 0.2s;
+    margin-bottom: 20px; text-align: center; letter-spacing: 0.1em;
+  }
+  .password-input:focus { border-color: var(--gold); background: rgba(0,0,0,0.8); }
+  .password-input::placeholder { color: rgba(212,200,176,0.4); }
+  .password-error {
+    color: rgba(139,26,26,0.8); font-size: 12px; margin-top: -16px; margin-bottom: 16px;
+    font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;
+    min-height: 20px;
+  }
+  .password-submit {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--blood), #5a0f0f);
+    border: 1px solid rgba(201,168,76,0.35); color: var(--gold);
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.3s;
+  }
+  .password-submit:hover {
+    background: linear-gradient(135deg, #a01f1f, var(--blood));
+    border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4);
+  }
+  body.locked { overflow: hidden; }
+  body.locked > .container { display: none; }
+</style>
+</head>
+<body class="locked">
+
+<!-- ═══ PASSWORD MODAL ═══ -->
+<div id="password-modal">
+  <div class="password-content">
+    <div class="password-title">⚔ The Iron Harvest ⚔</div>
+    <div class="password-subtitle">Enter the Passphrase</div>
+    <input type="password" id="password-input" class="password-input" placeholder="Speak the words..." autofocus>
+    <div class="password-error" id="password-error"></div>
+    <button class="password-submit" onclick="checkPassword()">Enter</button>
+  </div>
+</div>
+
+<!-- ═══ BATTLE OVERLAY ═══ -->
+<div id="battle-overlay">
+  <div class="battle-content">
+    <div class="battle-day-label" id="battle-day-label">Day 1</div>
+    <div class="battle-title">The Battle Commences</div>
+    <div class="battle-arena">
+      <div class="sword-left">🗡️</div>
+      <div class="sword-right">🗡️</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <h1>The Iron Harvest</h1>
+    <div class="flame-divider">
+      <div class="flame-line"></div>
+      <div class="flame-icon">⚔</div>
+      <div class="flame-line r"></div>
+    </div>
+    <div class="subtitle" id="subtitle-motto"></div>
+  </header>
+
+  <div id="setup-panel">
+    <div class="panel-title">⚔ Summon the Warriors</div>
+    <div class="top-row">
+      <div>
+        <label>Number of Warriors</label>
+        <select id="warrior-count" onchange="renderWarriorCards()">
+          <option value="4">4 Warriors</option>
+          <option value="6">6 Warriors</option>
+          <option value="8" selected>8 Warriors</option>
+          <option value="12">12 Warriors</option>
+          <option value="16">16 Warriors</option>
+          <option value="24">24 Warriors</option>
+        </select>
+      </div>
+      <div>
+        <label>The Iron Harvest Ground</label>
+        <select id="arena-type">
+          <option value="a cursed cathedral ruin choked with fog and fallen masonry">Cursed Cathedral Ruins</option>
+          <option value="a labyrinthine dungeon beneath a collapsed fortress">Fortress Dungeon</option>
+          <option value="a frozen moor haunted by spectral knights and black ice">Frozen Haunted Moor</option>
+          <option value="a plague-ravaged village with rotting barricades and poisoned wells">Plague Village</option>
+          <option value="a drowned castle whose flooded halls conceal sea serpents">Drowned Castle</option>
+          <option value="a volcanic crater worshipped as a god's forge, raining embers">The God's Forge</option>
+          <option value="an ancient colosseum overgrown with bloodthorn vines and crumbling arches">Bloodthorn Colosseum</option>
+        </select>
+      </div>
+    </div>
+    <div class="warrior-name-section">
+      <div class="panel-title">✦ Name the Warriors — leave blank for defaults</div>
+      <div class="warrior-grid" id="warrior-grid"></div>
+    </div>
+    <button class="btn-enter" id="btn-enter" onclick="startGame()" disabled>Loading chronicles…</button>
+  </div>
+
+  <div id="game-area">
+    <div id="game-master-panel" class="collapsed" style="display: none;">
+      <div class="gm-header" onclick="toggleGameMasterPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGameMasterPanel();}" role="button" tabindex="0">
+        <span class="gm-toggle">▼</span>
+        <span class="gm-title">Game Master</span>
+      </div>
+      <div class="gm-body">
+        <div class="gm-warrior-list" id="gm-warrior-list"></div>
+      </div>
+    </div>
+    <div class="game-layout">
+      <div class="game-main">
+        <div class="tracker" id="tracker"></div>
+        <div id="story-log"></div>
+        <div id="status-area"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// PASSWORD PROTECTION
+// ═══════════════════════════════════════════════════════════════════════════
+function checkPassword() {
+  const input = document.getElementById('password-input');
+  const error = document.getElementById('password-error');
+  const entered = input.value.trim().toLowerCase();
+  const _0x = atob('aHlwZWhvdXNl'); // obfuscated
+
+  if (entered === _0x.toLowerCase()) {
+    document.getElementById('password-modal').style.display = 'none';
+    document.body.classList.remove('locked');
+    input.value = '';
+    error.textContent = '';
+  } else {
+    error.textContent = 'Incorrect passphrase. Try again.';
+    input.value = '';
+    input.focus();
+  }
+}
+
+// Allow Enter key to submit password
+document.addEventListener('DOMContentLoaded', function() {
+  const passwordInput = document.getElementById('password-input');
+  if (passwordInput) {
+    passwordInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        checkPassword();
+      }
+    });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBTITLE MOTTOS — randomize on page load
+// ═══════════════════════════════════════════════════════════════════════════
+const SUBTITLE_MOTTOS = [
+  'Where Only One Survives',
+  'Enter the Arena of Shadows',
+  'The Last Warrior Stands',
+  'A Battle for the Ages'
+];
+
+function setRandomSubtitle() {
+  const subtitleEl = document.getElementById('subtitle-motto');
+  if (subtitleEl) {
+    subtitleEl.textContent = SUBTITLE_MOTTOS[Math.floor(Math.random() * SUBTITLE_MOTTOS.length)];
+  }
+}
+
+// Set random subtitle on page load
+setRandomSubtitle();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EVENT LOADING — callback when events.js has loaded
+// ═══════════════════════════════════════════════════════════════════════════
+window.onEventsReady = function(pools) {
+  window.EVENT_POOLS = pools;
+  const btn = document.getElementById('btn-enter');
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Sound the Horn';
+  }
+};
+</script>
+<script src="events.js"></script>
+<script>
+function showBattleOverlay(dayNum) {
+  const overlay = document.getElementById('battle-overlay');
+  document.getElementById('battle-day-label').textContent = `Day ${dayNum}`;
+  overlay.style.display    = 'flex';
+  overlay.style.transition = 'none';
+  overlay.style.opacity    = '0';
+  void overlay.offsetWidth;
+  overlay.style.transition = 'opacity 0.4s ease';
+  overlay.style.opacity    = '1';
+}
+
+function hideBattleOverlay() {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('battle-overlay');
+    overlay.style.transition = 'opacity 0.65s ease';
+    overlay.style.opacity    = '0';
+    setTimeout(() => { overlay.style.display = 'none'; resolve(); }, 700);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETUP DATA
+// ═══════════════════════════════════════════════════════════════════════════
+const DEFAULT_NAMES = [
+  'Aldric','Morrigan','Brennan','Isolde','Godfrey','Seraphine','Caius','Rowena',
+  'Theron','Elspeth','Draven','Celestine','Osric','Vespera','Lucian','Gwyneth',
+  'Alaric','Thessaly','Corvus','Briar','Edwyn','Nightshade','Roland','Vesper'
+];
+const CLASSES = [
+  'Knight','Dark Mage','Plague Doctor','Siege Master','Inquisitor','Sellsword',
+  'Shadow Monk','Warlock','Flagellant','Ironclad','Witch Hunter','Death Herald'
+];
+const KEEPS = [
+  'Ashenveil','Dreadmoor','Grimholt','Ironspire','Ravenwatch','Soulbarrow',
+  'Thorngate','Wraithfen','Blackmere','Dunspire','Fanghold','Mordenvast'
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE & UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+let sessionCards = [];
+let state = {};
+
+function rand(arr)   { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr){ return [...arr].sort(() => Math.random() - 0.5); }
+function fill(t, n)  { return t.replace(/\{name\}/g, n); }
+function pickUnique(pool, used) {
+  let attempts = 0, idx;
+  do { idx = Math.floor(Math.random() * pool.length); attempts++; }
+  while (used.has(idx) && attempts < pool.length * 2);
+  used.add(idx);
+  return pool[idx];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETUP RENDER
+// ═══════════════════════════════════════════════════════════════════════════
+function renderWarriorCards() {
+  const count = parseInt(document.getElementById('warrior-count').value);
+  const grid  = document.getElementById('warrior-grid');
+  const names = shuffle(DEFAULT_NAMES);
+  sessionCards = Array.from({ length: count }, (_, i) => ({
+    cls: rand(CLASSES), keep: rand(KEEPS), defaultName: names[i] || `Warrior ${i+1}`
+  }));
+  grid.innerHTML = sessionCards.map((c, i) => `
+    <div class="warrior-card">
+      <div class="warrior-card-header">
+        <span class="warrior-num-label">${i+1}</span>
+        <span class="class-badge">${c.cls}</span>
+      </div>
+      <input type="text" id="t-${i}" placeholder="${c.defaultName}" maxlength="22">
+      <div class="keep-tag">Keep: ${c.keep}</div>
+    </div>`).join('');
+}
+renderWarriorCards();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════════════════════
+function startGame() {
+  if (!window.EVENT_POOLS) {
+    alert('Event chronicles failed to load. Please refresh the page.');
+    return;
+  }
+  const count = parseInt(document.getElementById('warrior-count').value);
+  const arena = document.getElementById('arena-type').value;
+  const tributes = sessionCards.map((c, i) => {
+    const el   = document.getElementById(`t-${i}`);
+    const name = (el && el.value.trim()) || c.defaultName;
+    return { id: i, name, cls: c.cls, keep: c.keep, alive: true };
+  });
+  state = { tributes, arena, round: 0, history: [] };
+  document.getElementById('setup-panel').style.display = 'none';
+  document.getElementById('game-area').style.display   = 'block';
+  updateTracker();
+  showBattleOverlay(1);
+  runRound();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TRACKER
+// ═══════════════════════════════════════════════════════════════════════════
+function updateTracker() {
+  const alive = state.tributes.filter(t => t.alive).length;
+  document.getElementById('tracker').innerHTML = `
+    <div class="tracker-stats">
+      <div class="stat-chip">Day <span>${state.round}</span></div>
+      <div class="stat-chip">Survivors <span>${alive} / ${state.tributes.length}</span></div>
+    </div>
+    <div class="warrior-chips">
+      ${state.tributes.map(t => `
+        <div class="warrior-chip ${t.alive ? 'chip-alive' : 'chip-dead'}" title="${t.cls} · ${t.keep}">
+          ${t.name}
+        </div>`).join('')}
+    </div>`;
+  updateGameMasterPanel();
+}
+
+function toggleGameMasterPanel() {
+  const panel = document.getElementById('game-master-panel');
+  if (panel) panel.classList.toggle('collapsed');
+}
+
+function updateGameMasterPanel() {
+  const panel = document.getElementById('game-master-panel');
+  const list = document.getElementById('gm-warrior-list');
+  if (!panel || !list || !state.tributes) return;
+
+  // Show panel from Day 1 onwards
+  if (state.round >= 1) {
+    panel.style.display = '';
+    list.innerHTML = state.tributes.map(t => `
+      <div class="gm-warrior-row ${t.alive ? '' : 'dead'}">
+        <span class="gm-warrior-name">${t.name}</span>
+        <button class="gm-revive-btn ${t.alive ? 'hidden' : ''}" onclick="reviveWarrior(${t.id}); event.stopPropagation();" title="Revive">✧</button>
+      </div>`).join('');
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function reviveWarrior(id) {
+  const t = state.tributes.find(x => x.id === id);
+  if (t && !t.alive) {
+    t.alive = true;
+    delete t._death;
+    updateTracker();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════════════════════════════════════
+function setStatus(mode, label) {
+  const area = document.getElementById('status-area');
+  if (mode === 'next') {
+    area.innerHTML = `
+      <button class="btn-next" id="next-btn" onclick="advanceRound()">▶ Next Day</button>
+      <div class="status-msg">${label || ''}</div>`;
+  } else {
+    area.innerHTML = '';
+  }
+}
+
+function advanceRound() {
+  document.getElementById('next-btn').disabled = true;
+  setStatus('');
+  showBattleOverlay(state.round + 1);
+  runRound();
+}
+
+function toggleRoundBlock(headerEl) {
+  const block = headerEl.closest('.round-block');
+  if (!block) return;
+  block.classList.toggle('collapsed');
+  headerEl.setAttribute('aria-expanded', block.classList.contains('collapsed') ? 'false' : 'true');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CORE ROUND
+// ═══════════════════════════════════════════════════════════════════════════
+async function runRound() {
+  state.round++;
+  const MIN_ANIM_MS = 3000;
+  const animStart   = Date.now();
+
+  const alive   = state.tributes.filter(t => t.alive);
+  const isFirst = state.round === 1;
+
+  // ── 1. Deaths (only after day 2) ───────────────────────────────────────────
+  const diedThisRound = [];
+  const deathPool     = shuffle([...window.EVENT_POOLS.deaths]);
+  let   dc            = 0;
+  const deathsAllowed = state.round > 2;
+
+  if (deathsAllowed) {
+    if (state.tributes.length === 4) {
+      for (const t of shuffle(alive)) {
+        if (state.tributes.filter(x => x.alive).length <= 1) break;
+        if (Math.random() < 0.12) { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); }
+      }
+    } else if (isFirst) {
+      const n = Math.max(1, Math.floor(Math.random() * (Math.min(3, alive.length-1) + 1)));
+      shuffle(alive).slice(0, n).forEach(t => { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); });
+    } else {
+      for (const t of shuffle(alive)) {
+        if (state.tributes.filter(x => x.alive).length <= 1) break;
+        if (Math.random() < (alive.length <= 3 ? 0.25 : 0.12)) { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); }
+      }
+    }
+  }
+
+  // ── 2. Events ─────────────────────────────────────────────────────────────
+  const usedA = new Set(), usedC = new Set();
+  const events = alive.map(t => {
+    if (diedThisRound.find(d => d.id === t.id)) return { warrior:t, type:'death',       text: t._death };
+    if (Math.random() < 0.6)                    return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      usedA), t.name) };
+    return                                              { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, usedC), t.name) };
+  });
+
+  // ── 3. Build block (hidden until overlay fades) ───────────────────────────
+  const deathNames   = diedThisRound.map(t => t.name);
+  const deathsBanner = deathNames.length ? `<div class="deaths-banner">☠ Fallen: ${deathNames.join(', ')}</div>` : '';
+  const eventsHTML   = events.map(ev => {
+    const lbl = ev.type === 'death' ? '☠ Slain' : ev.type === 'consequence' ? 'Consequence' : 'Action';
+    return `<div class="event-row">
+      <div class="event-who">
+        <div class="event-who-name">${ev.warrior.name}</div>
+        <div class="event-who-class">${ev.warrior.cls}</div>
+      </div>
+      <div class="event-body"><span class="event-tag tag-${ev.type}">${lbl}</span>${ev.text}</div>
+    </div>`;
+  }).join('');
+
+  // Collapse all previous round blocks before adding the new one
+  document.querySelectorAll('#story-log .round-block').forEach(b => b.classList.add('collapsed'));
+
+  const block         = document.createElement('div');
+  block.className     = 'round-block';
+  block.style.opacity = '0';
+  block.dataset.round = String(state.round);
+  block.innerHTML     = `
+    <div class="round-header" onclick="toggleRoundBlock(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRoundBlock(this);}" role="button" tabindex="0" aria-expanded="true">
+      <span class="collapse-icon">▼</span>
+      Day ${state.round}
+    </div>
+    <div class="round-body">
+      <div class="round-body-inner">
+        <div class="warrior-events">${eventsHTML}</div>
+        <div class="round-summary">
+          <div class="summary-label">Day Summary</div>
+          <div class="summary-text" id="summary-${state.round}"><span style="opacity:0.4;font-style:italic;">The scribe composes the record…</span></div>
+          ${deathsBanner}
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('story-log').appendChild(block);
+  updateTracker();
+
+  const survivors = state.tributes.filter(t => t.alive);
+  const survivalDayThreshold = Math.ceil((state.tributes.length / 4) * 10);
+  const survivedToThreshold = state.round >= survivalDayThreshold && survivors.length >= 2;
+  const gameOver            = survivors.length <= 1 || survivedToThreshold;
+
+  // ── 4. Fetch summary (runs during animation) ──────────────────────────────
+  const aliveNames    = survivors.map(t => `${t.name} (${t.cls})`).join(', ');
+  const eventSummary  = events.map(e => `${e.warrior.name}: ${e.text}`).join(' ');
+  const fallback      = `Day ${state.round} draws to a close. ${deathNames.length} warrior${deathNames.length !== 1 ? 's' : ''} fell.`;
+
+  let summaryText = fallback;
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model:      "claude-sonnet-4-20250514",
+        max_tokens: 120,
+        system:     "You write punchy two-sentence gothic medieval Iron Harvest day summaries for a lord's chronicle. Third-person only. No markdown.",
+        messages:   [{ role: "user", content:
+          `Gothic medieval Iron Harvest, Day ${state.round}. Setting: ${state.arena}.
+Events: ${eventSummary}
+Deaths: ${deathNames.join(', ') || 'none'}.
+Still standing: ${aliveNames || 'none'}.
+Two short dramatic sentences. Gothic tone. No markdown.`
+        }]
+      })
+    });
+    const data = await resp.json();
+    summaryText = data.content.map(c => c.text || '').join('').trim() || fallback;
+  } catch(e) { /* use fallback */ }
+
+  state.history.push(`Day ${state.round}: ${summaryText}`);
+
+  // ── 5. Wait for min animation, then reveal ────────────────────────────────
+  const elapsed = Date.now() - animStart;
+  if (elapsed < MIN_ANIM_MS) await new Promise(r => setTimeout(r, MIN_ANIM_MS - elapsed));
+
+  // Fill in summary text
+  const el = document.getElementById(`summary-${state.round}`);
+  if (el) el.innerHTML = summaryText;
+
+  // Dismiss overlay, then fade block in
+  await hideBattleOverlay();
+
+  block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  void block.offsetWidth;
+  block.style.transition = 'opacity 0.55s ease';
+  block.style.opacity    = '1';
+
+  // ── 6. Continue or end ────────────────────────────────────────────────────
+  if (gameOver) {
+    const outcome = survivedToThreshold ? survivors : (survivors[0] || null);
+    showOutcome(outcome, survivedToThreshold, survivalDayThreshold);
+  } else {
+    setStatus('next', `${survivors.length} warrior${survivors.length !== 1 ? 's' : ''} remain`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OUTCOME
+// ═══════════════════════════════════════════════════════════════════════════
+function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
+  setStatus('');
+  const screen = document.createElement('div');
+  screen.className = 'outcome-screen';
+  if (victor) {
+    const victors = Array.isArray(victor) ? victor : [victor];
+    const namesEl = victors.map(v => `${v.name}, ${v.cls} of ${v.keep}`).join('<br>');
+    const summaryText = isSurvivalVictory
+      ? `Survived the Iron Harvest to Day ${survivalDayThreshold} and earned the lord's pardon. The warriors have prevailed.`
+      : `Stands alone as the Champion of the ${state.tributes.length}-warrior Iron Harvest after ${state.round} brutal days. The lord's hall erupts in acclaim.`;
+    screen.innerHTML = `
+      <div class="outcome-title victory">⚜ Champion${victors.length > 1 ? 's' : ''} ⚜</div>
+      <div class="champion-name">${namesEl}</div>
+      <div class="outcome-text">${summaryText}</div>
+      <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
+  } else {
+    screen.innerHTML = `
+      <div class="outcome-title" style="color:var(--gold-dim);">✦ All Fallen ✦</div>
+      <div class="outcome-text">
+        Every warrior has perished. The Iron Harvest claims all —
+        a dark omen the lord has never witnessed before. There is no Champion.
+      </div>
+      <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
+  }
+  document.getElementById('story-log').appendChild(screen);
+  screen.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
