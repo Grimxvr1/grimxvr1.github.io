@@ -708,7 +708,7 @@ function startGame() {
     const name = (el && el.value.trim()) || c.defaultName;
     return { id: i, name, cls: c.cls, keep: c.keep, alive: true };
   });
-  state = { tributes, arena, round: 0, history: [] };
+  state = { tributes, arena, round: 0, history: [], usedA: new Set(), usedC: new Set(), usedD: new Set() };
   document.getElementById('setup-panel').style.display = 'none';
   document.getElementById('game-area').style.display   = 'block';
   updateTracker();
@@ -811,33 +811,30 @@ async function runRound() {
 
   // ── 1. Deaths (only after day 2) ───────────────────────────────────────────
   const diedThisRound = [];
-  const deathPool     = shuffle([...window.EVENT_POOLS.deaths]);
-  let   dc            = 0;
   const deathsAllowed = state.round > 2;
 
   if (deathsAllowed) {
     if (state.tributes.length === 4) {
       for (const t of shuffle(alive)) {
         if (state.tributes.filter(x => x.alive).length <= 1) break;
-        if (Math.random() < 0.12) { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); }
+        if (Math.random() < 0.12) { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); }
       }
     } else if (isFirst) {
       const n = Math.max(1, Math.floor(Math.random() * (Math.min(3, alive.length-1) + 1)));
-      shuffle(alive).slice(0, n).forEach(t => { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); });
+      shuffle(alive).slice(0, n).forEach(t => { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); });
     } else {
       for (const t of shuffle(alive)) {
         if (state.tributes.filter(x => x.alive).length <= 1) break;
-        if (Math.random() < (alive.length <= 3 ? 0.25 : 0.12)) { t.alive = false; t._death = fill(deathPool[dc++ % deathPool.length], t.name); diedThisRound.push(t); }
+        if (Math.random() < (alive.length <= 3 ? 0.25 : 0.12)) { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); }
       }
     }
   }
 
   // ── 2. Events ─────────────────────────────────────────────────────────────
-  const usedA = new Set(), usedC = new Set();
   const events = alive.map(t => {
     if (diedThisRound.find(d => d.id === t.id)) return { warrior:t, type:'death',       text: t._death };
-    if (Math.random() < 0.6)                    return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      usedA), t.name) };
-    return                                              { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, usedC), t.name) };
+    if (Math.random() < 0.6)                    return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      state.usedA), t.name) };
+    return                                              { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, state.usedC), t.name) };
   });
 
   // ── 3. Build block (hidden until overlay fades) ───────────────────────────
