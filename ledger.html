@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Iron Harvest — Chronicle of Victories</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #7a5f2a;
+    --blood: #8b1a1a;
+    --ash: #1a1714;
+    --parchment: #e8dcc8;
+    --ember: #d4622a;
+    --text: #d4c9b0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ash);
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.35;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%);
+    pointer-events: none; z-index: 999;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--ash); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  /* Page nav */
+  .page-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 0 8px; gap: 12px;
+  }
+  .btn-page-back, .btn-import-link {
+    background: transparent; border: 1px solid rgba(201,168,76,0.2);
+    color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; padding: 8px 16px;
+    cursor: pointer; border-radius: 2px; transition: all 0.2s; text-decoration: none;
+    display: inline-block;
+  }
+  .btn-page-back:hover, .btn-import-link:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* Page header */
+  .page-header { text-align: center; padding: 20px 0 32px; }
+  .flame-divider { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 16px; }
+  .flame-line { height: 1px; width: 80px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .flame-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
+  .flame-icon { color: var(--ember); font-size: 20px; animation: flicker 2s ease-in-out infinite; }
+  @keyframes flicker {
+    0%,100% { opacity:1; transform:scaleY(1); }
+    50%      { opacity:0.65; transform:scaleY(0.88); }
+  }
+  .page-title {
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(20px, 4vw, 32px);
+    color: var(--gold); letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.3); margin-top: 12px;
+  }
+  .page-subtitle {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em;
+    color: var(--gold-dim); margin-top: 8px; text-transform: uppercase;
+  }
+
+  /* Ledger table */
+  .ledger-content { margin-bottom: 28px; }
+  .ledger-empty {
+    text-align: center; font-style: italic; color: rgba(212,200,176,0.4);
+    padding: 40px 0; font-size: 16px;
+  }
+  .ledger-table {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid rgba(201,168,76,0.12); border-radius: 2px; overflow: hidden;
+  }
+  .ledger-table thead tr {
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid rgba(201,168,76,0.18);
+  }
+  .ledger-table th {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.35em;
+    color: var(--gold-dim); text-transform: uppercase; padding: 11px 14px;
+    text-align: left; font-weight: 400;
+  }
+  .ledger-table th.col-wins { text-align: center; }
+  .ledger-table tbody tr {
+    border-bottom: 1px solid rgba(201,168,76,0.06); transition: background 0.15s;
+  }
+  .ledger-table tbody tr:last-child { border-bottom: none; }
+  .ledger-table tbody tr:hover { background: rgba(201,168,76,0.04); }
+  .ledger-table td {
+    padding: 11px 14px; font-size: 15px; color: var(--text); vertical-align: middle;
+  }
+  .ledger-table td.col-rank {
+    font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold-dim);
+    letter-spacing: 0.1em; width: 40px; text-align: center;
+  }
+  .ledger-table td.col-rank.rank-1 { color: var(--gold); font-size: 13px; }
+  .ledger-table td.col-rank.rank-2 { color: #c0c0c0; }
+  .ledger-table td.col-rank.rank-3 { color: #cd7f32; }
+  .ledger-table td.col-name {
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.1em; color: var(--parchment);
+  }
+  .ledger-table td.col-wins {
+    text-align: center; font-family: 'Cinzel Decorative', serif;
+    font-size: 16px; color: var(--gold); width: 70px;
+  }
+  .ledger-actions { padding: 8px 0 40px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .btn-download-wins {
+    max-width: 320px; width: 100%; padding: 8px; background: transparent;
+    border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-download-wins:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
+  .btn-reset-ledger {
+    max-width: 320px; width: 100%; padding: 8px; background: transparent;
+    border: 1px solid rgba(139,26,26,0.35); color: rgba(195,68,68,0.6);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-reset-ledger:hover { border-color: rgba(195,68,68,0.7); color: rgba(195,68,68,0.9); background: rgba(139,26,26,0.08); }
+
+  /* Import panel */
+  .import-panel {
+    background: linear-gradient(135deg, rgba(42,37,32,0.92), rgba(26,23,20,0.96));
+    border: 1px solid var(--gold-dim); border-radius: 2px; padding: 32px; margin-bottom: 40px;
+    position: relative;
+  }
+  .import-panel::before {
+    content: ''; position: absolute; inset: 4px;
+    border: 1px solid rgba(201,168,76,0.07); pointer-events: none;
+  }
+  .panel-title {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.45em;
+    color: var(--gold-dim); text-transform: uppercase;
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+  }
+  .import-desc {
+    font-size: 15px; color: var(--text); line-height: 1.65; margin-bottom: 22px;
+  }
+  .import-desc code {
+    font-family: monospace; color: var(--gold-dim); font-size: 13px;
+    background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 2px;
+  }
+  .import-desc strong { color: var(--parchment); font-weight: 600; }
+  .import-file-label {
+    display: block; border: 1px dashed rgba(201,168,76,0.3);
+    border-radius: 2px; padding: 20px; text-align: center; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 16px;
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em;
+    color: var(--gold-dim); text-transform: uppercase;
+  }
+  .import-file-label:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.04); }
+  .import-file-label input { display: none; }
+  .import-preview {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 2px; padding: 14px 16px; margin-bottom: 4px; max-height: 260px; overflow-y: auto;
+  }
+  .import-preview-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(201,168,76,0.06); font-size: 14px;
+  }
+  .import-preview-row:last-child { border-bottom: none; }
+  .import-preview-name { font-family: 'Cinzel', serif; font-size: 11px; color: var(--parchment); letter-spacing: 0.1em; }
+  .import-preview-wins { color: var(--gold); font-size: 13px; }
+  .import-preview-merge { font-size: 11px; color: var(--ember); font-style: italic; margin-left: 8px; }
+  .import-status {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; min-height: 22px; margin-top: 8px;
+  }
+  .import-status.success { color: #6abf6a; }
+  .import-status.error   { color: rgba(195,68,68,0.9); }
+  .btn-enter {
+    width: 100%; margin-top: 16px; padding: 15px;
+    background: linear-gradient(135deg, var(--blood), #5a0f0f);
+    border: 1px solid rgba(201,168,76,0.35); color: var(--gold);
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.35em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.3s;
+  }
+  .btn-enter:hover {
+    background: linear-gradient(135deg, #a01f1f, var(--blood));
+    border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4);
+  }
+
+  /* Page sections */
+  #ledger-section, #import-section { display: none; }
+  #ledger-section.active, #import-section.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══ LEDGER SECTION ═══ -->
+  <div id="ledger-section" class="active">
+    <div class="page-nav">
+      <a href="index.html" class="btn-page-back">&#8592; Back to Battle</a>
+      <button class="btn-import-link" onclick="showImport()">&#x2B06; Import Ledger</button>
+    </div>
+    <div class="page-header">
+      <div class="flame-divider">
+        <div class="flame-line"></div>
+        <div class="flame-icon">&#x2694;</div>
+        <div class="flame-line r"></div>
+      </div>
+      <div class="page-title">Chronicle of Victories</div>
+      <div class="page-subtitle">Hall of Champions — Iron Harvest</div>
+    </div>
+    <div id="ledger-content" class="ledger-content"></div>
+    <div class="ledger-actions">
+      <button class="btn-download-wins" id="btn-download-ledger">&#x2B07; Download Ledger JSON</button>
+      <button class="btn-reset-ledger" onclick="resetLedger()">&#x2715; Reset Ledger</button>
+    </div>
+  </div>
+
+  <!-- ═══ IMPORT SECTION ═══ -->
+  <div id="import-section">
+    <div class="page-nav">
+      <button class="btn-page-back" onclick="showLedger()">&#8592; Back to Ledger</button>
+    </div>
+    <div class="page-header">
+      <div class="flame-divider">
+        <div class="flame-line"></div>
+        <div class="flame-icon">&#x2694;</div>
+        <div class="flame-line r"></div>
+      </div>
+      <div class="page-title">Import Ledger</div>
+      <div class="page-subtitle">Restore or Merge a Downloaded Chronicle</div>
+    </div>
+    <div class="import-panel">
+      <div class="panel-title">&#x2756; Upload a Previous Ledger File</div>
+      <p class="import-desc">Select a previously downloaded <code>iron-harvest-wins.json</code> file. Wins will be <strong>merged</strong> with the current ledger — existing entries keep whichever win count is higher.</p>
+      <label class="import-file-label">
+        <span id="import-file-text">Choose file…</span>
+        <input type="file" id="import-file-input" accept=".json,application/json" onchange="handleImportFile(this)">
+      </label>
+      <div id="import-preview" class="import-preview" style="display:none;"></div>
+      <div id="import-status" class="import-status"></div>
+      <button class="btn-enter" id="btn-confirm-import" style="display:none;" onclick="confirmImport()">&#x2714; Merge &amp; Save</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WIN_STORAGE_KEY = 'iron-harvest-wins';
+
+function loadWinRecord() {
+  try {
+    const raw = localStorage.getItem(WIN_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function saveWinRecord(record) {
+  try {
+    localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record));
+  } catch (e) {}
+}
+
+function downloadWinsJSON(record) {
+  const sorted = Object.entries(record)
+    .sort((a, b) => b[1].wins - a[1].wins)
+    .reduce((obj, [k, v]) => { obj[k] = v; return obj; }, {});
+  const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'iron-harvest-wins.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Ledger ──────────────────────────────────────────────────────────────────
+function showLedger() {
+  document.getElementById('import-section').classList.remove('active');
+  document.getElementById('ledger-section').classList.add('active');
+  renderLedger();
+}
+
+function renderLedger() {
+  const record  = loadWinRecord();
+  const el      = document.getElementById('ledger-content');
+  const dlBtn   = document.getElementById('btn-download-ledger');
+  const entries = Object.entries(record).sort((a, b) => b[1].wins - a[1].wins);
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="ledger-empty">No victories recorded yet. Name your warriors and let the Iron Harvest begin.</div>';
+    dlBtn.style.display = 'none';
+    return;
+  }
+
+  dlBtn.style.display = '';
+  dlBtn.onclick = () => downloadWinsJSON(record);
+
+  const rankSymbol = i => {
+    if (i === 0) return '&#x2764;';
+    if (i === 1) return '&#x2741;';
+    if (i === 2) return '&#x2740;';
+    return i + 1;
+  };
+
+  const rows = entries.map(([name, data], i) => `
+    <tr>
+      <td class="col-rank rank-${i+1}">${rankSymbol(i)}</td>
+      <td class="col-name">${name}</td>
+      <td class="col-wins">${data.wins}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <table class="ledger-table">
+      <thead><tr>
+        <th></th>
+        <th>Warrior</th>
+        <th class="col-wins">Wins</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function resetLedger() {
+  if (!confirm('Are you sure you want to reset the entire ledger? This cannot be undone.')) return;
+  saveWinRecord({});
+  renderLedger();
+}
+
+// ── Import ───────────────────────────────────────────────────────────────────
+let _pendingImport = null;
+
+function showImport() {
+  document.getElementById('ledger-section').classList.remove('active');
+  document.getElementById('import-section').classList.add('active');
+  _pendingImport = null;
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('import-status').textContent = '';
+  document.getElementById('import-status').className = 'import-status';
+  document.getElementById('btn-confirm-import').style.display = 'none';
+  document.getElementById('import-file-text').textContent = 'Choose file…';
+  document.getElementById('import-file-input').value = '';
+}
+
+async function handleImportFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('import-file-text').textContent = file.name;
+  document.getElementById('import-status').textContent = '';
+  document.getElementById('import-status').className = 'import-status';
+
+  try {
+    const text     = await file.text();
+    const imported = JSON.parse(text);
+
+    if (typeof imported !== 'object' || Array.isArray(imported) || Object.keys(imported).length === 0)
+      throw new Error('Invalid format');
+    const valid = Object.values(imported).every(v => v !== null && typeof v === 'object' && typeof v.wins === 'number');
+    if (!valid) throw new Error('Invalid format');
+
+    const current = loadWinRecord();
+    _pendingImport = imported;
+
+    const rows = Object.entries(imported).map(([name, data]) => {
+      const existing = current[name];
+      let mergeNote = '';
+      if (existing) {
+        if (data.wins > existing.wins)       mergeNote = `<span class="import-preview-merge">was ${existing.wins} → ${data.wins}</span>`;
+        else if (data.wins === existing.wins) mergeNote = `<span class="import-preview-merge">no change</span>`;
+        else                                  mergeNote = `<span class="import-preview-merge">kept at ${existing.wins}</span>`;
+      } else {
+        mergeNote = `<span class="import-preview-merge">new entry</span>`;
+      }
+      return `<div class="import-preview-row">
+        <span class="import-preview-name">${name}</span>
+        <span><span class="import-preview-wins">${data.wins} win${data.wins !== 1 ? 's' : ''}</span> ${mergeNote}</span>
+      </div>`;
+    }).join('');
+
+    const preview = document.getElementById('import-preview');
+    preview.innerHTML = rows;
+    preview.style.display = 'block';
+    document.getElementById('btn-confirm-import').style.display = 'block';
+
+  } catch (e) {
+    document.getElementById('import-status').textContent = 'Invalid file — must be a valid iron-harvest-wins.json';
+    document.getElementById('import-status').className = 'import-status error';
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('btn-confirm-import').style.display = 'none';
+    _pendingImport = null;
+  }
+}
+
+function confirmImport() {
+  if (!_pendingImport) return;
+  const current = loadWinRecord();
+
+  Object.entries(_pendingImport).forEach(([name, data]) => {
+    if (!current[name]) {
+      current[name] = data;
+    } else if (data.wins > current[name].wins) {
+      current[name].wins = data.wins;
+    }
+  });
+
+  saveWinRecord(current);
+  _pendingImport = null;
+
+  const status = document.getElementById('import-status');
+  status.textContent = 'Ledger merged successfully.';
+  status.className = 'import-status success';
+  document.getElementById('btn-confirm-import').style.display = 'none';
+
+  setTimeout(() => showLedger(), 1200);
+}
+
+// Init
+renderLedger();
+</script>
+</body>
+</html>

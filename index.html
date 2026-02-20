@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Iron Harvest — Gothic Medieval Simulator</title>
+<title>The Iron Harvest — An unfolding adventure</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -269,6 +269,14 @@
   }
   .btn-next:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.07); }
   .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-start-over {
+    width: 100%; margin-top: 10px; padding: 8px;
+    background: transparent;
+    border: 1px solid rgba(139,26,26,0.35); color: rgba(195,68,68,0.6);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-start-over:hover { border-color: rgba(195,68,68,0.7); color: rgba(195,68,68,0.9); background: rgba(139,26,26,0.08); }
 
   /* Outcome */
   .outcome-screen { text-align: center; padding: 56px 20px; animation: fadeIn 1s ease-out; }
@@ -278,6 +286,27 @@
   .outcome-text { font-style: italic; color: var(--text); max-width: 520px; margin: 0 auto 32px; line-height: 1.85; font-size: 17px; }
   .btn-restart { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; padding: 12px 32px; cursor: pointer; border-radius: 2px; transition: all 0.3s; }
   .btn-restart:hover { border-color: var(--gold); color: var(--gold); }
+
+  .win-ledger {
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(201,168,76,0.15);
+    border-left: 3px solid var(--gold-dim); border-radius: 0 2px 2px 0;
+    padding: 16px 20px; max-width: 360px; margin: 0 auto 28px; text-align: left;
+  }
+  .win-ledger-title {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.4em;
+    color: var(--gold-dim); text-transform: uppercase; margin-bottom: 12px;
+  }
+  .win-ledger-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .win-ledger-name { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.12em; color: var(--gold); flex: 1; }
+  .win-ledger-count { font-family: 'EB Garamond', serif; font-size: 14px; color: var(--text); }
+  .win-ledger-rows span { display: flex; justify-content: space-between; }
+  .btn-download-wins {
+    width: 100%; padding: 8px; background: transparent;
+    border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-download-wins:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
 
   /* ═══════════════════════════════════════════════════════════════
      BATTLE OVERLAY
@@ -409,6 +438,17 @@
   }
   body.locked { overflow: hidden; }
   body.locked > .container { display: none; }
+
+
+  /* GM panel actions group */
+  .gm-panel-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .btn-gm-ledger {
+    width: 100%; padding: 8px; background: transparent;
+    border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-gm-ledger:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
 </style>
 </head>
 <body class="locked">
@@ -482,16 +522,21 @@
     <button class="btn-enter" id="btn-enter" onclick="startGame()" disabled>Loading chronicles…</button>
   </div>
 
-  <div id="game-area">
-    <div id="game-master-panel" class="collapsed" style="display: none;">
+  <div id="game-master-panel" class="collapsed">
       <div class="gm-header" onclick="toggleGameMasterPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGameMasterPanel();}" role="button" tabindex="0">
         <span class="gm-toggle">▼</span>
         <span class="gm-title">Game Master</span>
       </div>
       <div class="gm-body">
         <div class="gm-warrior-list" id="gm-warrior-list"></div>
+        <div class="gm-panel-actions">
+          <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
+          <button class="btn-start-over" id="btn-start-over" onclick="location.reload()" style="display:none;">↺ Start Over</button>
+        </div>
       </div>
     </div>
+
+  <div id="game-area">
     <div class="game-layout">
       <div class="game-main">
         <div class="tracker" id="tracker"></div>
@@ -646,6 +691,7 @@ function renderWarriorCards() {
     </div>`).join('');
 }
 renderWarriorCards();
+updateGameMasterPanel();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // START
@@ -696,19 +742,22 @@ function toggleGameMasterPanel() {
 
 function updateGameMasterPanel() {
   const panel = document.getElementById('game-master-panel');
-  const list = document.getElementById('gm-warrior-list');
-  if (!panel || !list || !state.tributes) return;
+  const list  = document.getElementById('gm-warrior-list');
+  const startOverBtn = document.getElementById('btn-start-over');
+  if (!panel || !list) return;
 
-  // Show panel from Day 1 onwards
-  if (state.round >= 1) {
-    panel.style.display = '';
+  if (state.tributes && state.round >= 1) {
+    // In-game: show warrior list and start over
     list.innerHTML = state.tributes.map(t => `
       <div class="gm-warrior-row ${t.alive ? '' : 'dead'}">
         <span class="gm-warrior-name">${t.name}</span>
         <button class="gm-revive-btn ${t.alive ? 'hidden' : ''}" onclick="reviveWarrior(${t.id}); event.stopPropagation();" title="Revive">✧</button>
       </div>`).join('');
+    if (startOverBtn) startOverBtn.style.display = '';
   } else {
-    panel.style.display = 'none';
+    // Setup: hide warrior list and start over
+    list.innerHTML = '';
+    if (startOverBtn) startOverBtn.style.display = 'none';
   }
 }
 
@@ -884,29 +933,89 @@ Two short dramatic sentences. Gothic tone. No markdown.`
   // ── 6. Continue or end ────────────────────────────────────────────────────
   if (gameOver) {
     const outcome = survivedToThreshold ? survivors : (survivors[0] || null);
-    showOutcome(outcome, survivedToThreshold, survivalDayThreshold);
+    await showOutcome(outcome, survivedToThreshold, survivalDayThreshold);
   } else {
     setStatus('next', `${survivors.length} warrior${survivors.length !== 1 ? 's' : ''} remain`);
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// WIN TRACKING
+// ═══════════════════════════════════════════════════════════════════════════
+const WIN_STORAGE_KEY = 'iron-harvest-wins';
+
+function loadWinRecord() {
+  try {
+    const raw = localStorage.getItem(WIN_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveWinRecord(record) {
+  try {
+    localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record));
+  } catch (e) { /* silent fail */ }
+}
+
+function recordWins(victors, defaultNames) {
+  const customVictors = victors.filter(v => !defaultNames.includes(v.name));
+  if (customVictors.length === 0) return null;
+
+  const record = loadWinRecord();
+  customVictors.forEach(v => {
+    if (!record[v.name]) {
+      record[v.name] = { wins: 0 };
+    }
+    record[v.name].wins++;
+  });
+
+  saveWinRecord(record);
+  return record;
+}
+
+function downloadWinsJSON(record) {
+  const sorted = Object.entries(record)
+    .sort((a, b) => b[1].wins - a[1].wins)
+    .reduce((obj, [k, v]) => { obj[k] = v; return obj; }, {});
+  const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'iron-harvest-wins.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // OUTCOME
 // ═══════════════════════════════════════════════════════════════════════════
-function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
+async function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
   setStatus('');
   const screen = document.createElement('div');
   screen.className = 'outcome-screen';
   if (victor) {
-    const victors = Array.isArray(victor) ? victor : [victor];
-    const namesEl = victors.map(v => `${v.name}, ${v.cls} of ${v.keep}`).join('<br>');
+    const victors   = Array.isArray(victor) ? victor : [victor];
+    const namesEl   = victors.map(v => `${v.name}, ${v.cls} of ${v.keep}`).join('<br>');
     const summaryText = isSurvivalVictory
       ? `Survived the Iron Harvest to Day ${survivalDayThreshold} and earned the lord's pardon. The warriors have prevailed.`
       : `Stands alone as the Champion of the ${state.tributes.length}-warrior Iron Harvest after ${state.round} brutal days. The lord's hall erupts in acclaim.`;
+
+    // Record wins for custom-named warriors only
+    const record = recordWins(victors, DEFAULT_NAMES);
+
+    // Build view ledger link if any custom winners recorded
+    const customVictors = victors.filter(v => !DEFAULT_NAMES.includes(v.name));
+    const ledgerBtn = record && customVictors.length > 0
+      ? `<button class="btn-download-wins" style="max-width:280px;margin:0 auto 20px;display:block;" onclick="window.location.href='ledger.html'">📜 View Chronicle of Victories</button>`
+      : '';
+
     screen.innerHTML = `
       <div class="outcome-title victory">⚜ Champion${victors.length > 1 ? 's' : ''} ⚜</div>
       <div class="champion-name">${namesEl}</div>
       <div class="outcome-text">${summaryText}</div>
+      ${ledgerBtn}
       <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
   } else {
     screen.innerHTML = `
@@ -920,6 +1029,8 @@ function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
   document.getElementById('story-log').appendChild(screen);
   screen.scrollIntoView({ behavior: 'smooth' });
 }
+
+
 </script>
 </body>
 </html>
