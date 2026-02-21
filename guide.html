@@ -243,13 +243,14 @@
     display: block; letter-spacing: 0.05em;
   }
 </style>
+<script src="nav.js"></script>
 </head>
 <body>
 
 <div class="container">
 
   <div class="page-nav">
-    <a href="index.html" class="btn-page-back">&#8592; Back to Battle</a>
+    <button class="btn-page-back" onclick="navigate('index.html')">&#8592; Back to Battle</button>
   </div>
 
   <div class="page-header">
@@ -272,7 +273,7 @@
     <div class="section-body">
       <p>The <strong>Iron Harvest</strong> is a gothic medieval battle simulation played out day by day in a cursed arena of your choosing. Warriors from rival keeps are thrown together with no allies, no quarter, and no guarantee of mercy — from each other or from the Gauntlet itself.</p>
       <p>You are the lord presiding over this spectacle. You choose the arena, summon the warriors, name them if you wish, and then watch the chronicle unfold. Each day, every living warrior experiences an <strong>Action</strong> or <strong>Consequence</strong> drawn from a pool of hundreds of events — and some meet their end entirely.</p>
-      <p>At the close of each day, a scribe composes a two-sentence gothic summary of everything that transpired and adds it to the chronicle. The game ends when a single champion remains standing — or when enough time has passed that the lord grants a pardon to the survivors.</p>
+      <p>At the close of each day, an AI scribe composes a two-sentence gothic summary of everything that transpired and adds it to the chronicle. The game ends when a single champion remains standing — or when enough time has passed that the lord grants a pardon to the survivors.</p>
       <div class="callout">
         <strong>The Iron Harvest is a spectator experience.</strong> There are no decisions to make once the horn sounds. Sit back, read the chronicle, and let fate — and a healthy dose of chaos — do the rest.
       </div>
@@ -296,7 +297,7 @@
         </div>
         <div class="info-card">
           <div class="info-card-label">The Arena</div>
-          <div class="info-card-value">Seven cursed grounds to choose from. The arena flavours the scribe's daily summaries but does not affect the underlying odds.</div>
+          <div class="info-card-value">Seven cursed grounds to choose from. The arena flavours the AI scribe's daily summaries but does not affect the underlying odds.</div>
         </div>
         <div class="info-card">
           <div class="info-card-label">Warrior Names</div>
@@ -320,7 +321,7 @@
       <span class="section-toggle">▼</span>
     </div>
     <div class="section-body">
-      <p>The arena is passed to the scribe each day as context for the chronicle. Choose the ground that fits the story you want told.</p>
+      <p>The arena is passed to the AI scribe each day as context for the chronicle. Choose the ground that fits the story you want told.</p>
       <div class="arena-list">
         <div class="arena-row">
           <span class="arena-name">Cursed Cathedral Ruins</span>
@@ -622,7 +623,7 @@
       <p><strong>Name your warriors after real people.</strong> The events read very differently when the hapless warrior who gets outwitted by a dungeon rat is your colleague.</p>
       <p><strong>Start with 8 warriors.</strong> It's the default for a reason — long enough for the chronicle to develop personality, short enough that it concludes in a reasonable session.</p>
       <p><strong>Use the revive button sparingly.</strong> The Gauntlet earned that kill. Reviving a fallen warrior cheapens the drama — but sometimes the story demands it.</p>
-      <p><strong>Read the day summaries aloud.</strong> The scribe writes for an audience. The gothic tone lands better spoken.</p>
+      <p><strong>Read the day summaries aloud.</strong> The AI scribe writes for an audience. The gothic tone lands better spoken.</p>
       <p><strong>Download your ledger occasionally.</strong> Browser storage can be cleared. If you have a warrior with a proud win record, back them up.</p>
       <p><strong>Large games (16–24 warriors) become a saga.</strong> With 24 warriors the pardon doesn't come until Day 60, and the pool of 139 actions and 141 consequences means almost no event will repeat before the game ends.</p>
     </div>

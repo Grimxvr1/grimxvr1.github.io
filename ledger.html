@@ -226,6 +226,7 @@
   #ledger-section, #import-section { display: none; }
   #ledger-section.active, #import-section.active { display: block; }
 </style>
+<script src="nav.js"></script>
 </head>
 <body>
 
@@ -234,7 +235,7 @@
   <!-- ═══ LEDGER SECTION ═══ -->
   <div id="ledger-section" class="active">
     <div class="page-nav">
-      <a href="index.html" class="btn-page-back">&#8592; Back to Battle</a>
+      <button class="btn-page-back" onclick="navigate('index.html')">&#8592; Back to Battle</button>
       <button class="btn-import-link" onclick="showImport()">&#x2B06; Import Ledger</button>
     </div>
     <div class="page-header">
