@@ -81,6 +81,24 @@
     color: var(--gold-dim); margin-top: 8px; text-transform: uppercase;
   }
 
+  /* Rank legend */
+  .rank-legend {
+    display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+    margin-bottom: 24px; padding: 12px 16px;
+    background: rgba(0,0,0,0.25); border: 1px solid rgba(201,168,76,0.1);
+    border-radius: 2px;
+  }
+  .rank-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--gold-dim);
+  }
+  .rank-legend-symbol { font-size: 14px; }
+  .rank-legend-symbol.rank-1 { color: var(--gold); }
+  .rank-legend-symbol.rank-2 { color: #c0c0c0; }
+  .rank-legend-symbol.rank-3 { color: #cd7f32; }
+  .rank-legend-symbol.rank-n { color: var(--gold-dim); font-size: 11px; }
+
   /* Ledger table */
   .ledger-content { margin-bottom: 28px; }
   .ledger-empty {
@@ -123,6 +141,8 @@
     text-align: center; font-family: 'Cinzel Decorative', serif;
     font-size: 16px; color: var(--gold); width: 70px;
   }
+  .ledger-table td.col-class { font-size: 13px; color: var(--ember); }
+  .ledger-table td.col-keep  { font-size: 13px; color: var(--text); }
   .ledger-actions { padding: 8px 0 40px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
   .btn-download-wins {
     max-width: 320px; width: 100%; padding: 8px; background: transparent;
@@ -226,6 +246,12 @@
       <div class="page-title">Chronicle of Victories</div>
       <div class="page-subtitle">Hall of Champions — Iron Harvest</div>
     </div>
+    <div class="rank-legend">
+      <div class="rank-legend-item"><span class="rank-legend-symbol rank-1">&#x2764;</span> 1st Place</div>
+      <div class="rank-legend-item"><span class="rank-legend-symbol rank-2">&#x2741;</span> 2nd Place</div>
+      <div class="rank-legend-item"><span class="rank-legend-symbol rank-3">&#x2740;</span> 3rd Place</div>
+      <div class="rank-legend-item"><span class="rank-legend-symbol rank-n">4+</span> All Others</div>
+    </div>
     <div id="ledger-content" class="ledger-content"></div>
     <div class="ledger-actions">
       <button class="btn-download-wins" id="btn-download-ledger">&#x2B07; Download Ledger JSON</button>
@@ -322,6 +348,8 @@ function renderLedger() {
     <tr>
       <td class="col-rank rank-${i+1}">${rankSymbol(i)}</td>
       <td class="col-name">${name}</td>
+      <td class="col-class">${data.class || '—'}</td>
+      <td class="col-keep">${data.keep || '—'}</td>
       <td class="col-wins">${data.wins}</td>
     </tr>`).join('');
 
@@ -330,6 +358,8 @@ function renderLedger() {
       <thead><tr>
         <th></th>
         <th>Warrior</th>
+        <th>Class</th>
+        <th>Keep</th>
         <th class="col-wins">Wins</th>
       </tr></thead>
       <tbody>${rows}</tbody>
