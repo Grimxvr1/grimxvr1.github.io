@@ -830,6 +830,86 @@ function toggleRoundBlock(headerEl) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LOCAL SUMMARY FALLBACK
+// Generates an atmospheric two-sentence chronicle entry from raw event data.
+// Used whenever the Anthropic API is unreachable (e.g. CORS outside claude.ai).
+// ═══════════════════════════════════════════════════════════════════════════
+function buildFallbackSummary(day, events, dead, survivors, arena) {
+  const OPENERS = [
+    `The ${ordinal(day)} day of the Harvest drew a bloody veil across the arena.`,
+    `As dusk settled over the arena, the chronicle scribe recorded another grim reckoning.`,
+    `The Gauntlet exacted its toll on the ${ordinal(day)} day, as it always does.`,
+    `Another day bled into darkness within the cursed grounds.`,
+    `The ${ordinal(day)} day of blood and shadow drew to its inevitable close.`,
+    `Torchlight guttered and the death knells rang as the ${ordinal(day)} day expired.`,
+    `The lord's herald scratched fresh tallies into the chronicle as day ${day} concluded.`,
+    `No mercy was offered, and none was sought, as the ${ordinal(day)} day drew its curtain.`,
+  ];
+
+  const DEATH_LINES = {
+    0: [
+      `Not one warrior fell today — a rare mercy, or perhaps merely a postponement.`,
+      `The Gauntlet claimed no lives this day, though it came close enough to be felt.`,
+      `The field held steady; no death knells tolled, though several warriors would not soon forget their close calls.`,
+      `By some dark providence, all warriors lived to see the next dawn.`,
+    ],
+    1: [
+      `One warrior was taken from the field, their name added to the growing ledger of the fallen.`,
+      `A single death knell rang out across the grounds — one fewer soul to contest the crown.`,
+      `One more name was struck from the rolls of the living before nightfall.`,
+      `The Gauntlet claimed one, as it always claims at least one.`,
+    ],
+  };
+
+  const MANY_DEAD = [
+    `${dead.length} warriors were struck from the living rolls before the day was out — the field grows ever thinner.`,
+    `${dead.length} death knells rang in succession, each one tightening the noose around the survivors.`,
+    `The day's toll was heavy: ${dead.length} fell, and the chronicle grows darker with each entry.`,
+    `${dead.length} more names were added to the ledger of the slain. The Harvest does not negotiate.`,
+  ];
+
+  const SURVIVOR_LINES = {
+    many: [
+      `${survivors.length} warriors yet draw breath and sharpen their resolve for what comes next.`,
+      `${survivors.length} souls remain — each one wary, each one watching the shadows for what the next day brings.`,
+      `With ${survivors.length} still standing, the contest grows fiercer by the hour.`,
+    ],
+    few: [
+      `Only ${survivors.length} remain now. The end of the Harvest draws near.`,
+      `${survivors.length} warriors stand between the crown and the grave. The tension is absolute.`,
+      `The field has narrowed to ${survivors.length}. Every breath feels borrowed.`,
+    ],
+    one: [
+      `One warrior stands alone. The Iron Harvest has found its champion.`,
+      `A single soul remains where many began. The chronicle is nearly complete.`,
+    ],
+  };
+
+  function ordinal(n) {
+    const s = ['th','st','nd','rd'], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  const opener = pick(OPENERS);
+
+  let deathLine;
+  if (dead.length === 0)      deathLine = pick(DEATH_LINES[0]);
+  else if (dead.length === 1) deathLine = pick(DEATH_LINES[1]);
+  else                        deathLine = pick(MANY_DEAD);
+
+  let survivorLine;
+  if (survivors.length === 0)      survivorLine = 'None walk away. The Harvest has consumed them all.';
+  else if (survivors.length === 1) survivorLine = pick(SURVIVOR_LINES.one);
+  else if (survivors.length <= 3)  survivorLine = pick(SURVIVOR_LINES.few);
+  else                             survivorLine = pick(SURVIVOR_LINES.many);
+
+  // Sentence 1: opener + death context. Sentence 2: survivor context.
+  return `${opener} ${deathLine} ${survivorLine}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CORE ROUND
 // ═══════════════════════════════════════════════════════════════════════════
 async function runRound() {
@@ -913,11 +993,10 @@ async function runRound() {
   const gameOver            = survivors.length <= 1 || survivedToThreshold;
 
   // ── 4. Fetch summary (runs during animation) ──────────────────────────────
-  const aliveNames    = survivors.map(t => `${t.name} (${t.cls})`).join(', ');
-  const eventSummary  = events.map(e => `${e.warrior.name}: ${e.text}`).join(' ');
-  const fallback      = `Day ${state.round} draws to a close. ${deathNames.length} warrior${deathNames.length !== 1 ? 's' : ''} fell.`;
+  const aliveNames   = survivors.map(t => `${t.name} (${t.cls})`).join(', ');
+  const eventSummary = events.map(e => `${e.warrior.name}: ${e.text}`).join(' ');
 
-  let summaryText = fallback;
+  let summaryText = buildFallbackSummary(state.round, events, diedThisRound, survivors, state.arena);
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -935,9 +1014,11 @@ Two short dramatic sentences. Gothic tone. No markdown.`
         }]
       })
     });
-    const data = await resp.json();
-    summaryText = data.content.map(c => c.text || '').join('').trim() || fallback;
-  } catch(e) { /* use fallback */ }
+    if (resp.ok) {
+      const data = await resp.json();
+      summaryText = data.content.map(c => c.text || '').join('').trim() || summaryText;
+    }
+  } catch(e) { /* CORS or network — use local fallback summary */ }
 
   state.history.push(`Day ${state.round}: ${summaryText}`);
 
