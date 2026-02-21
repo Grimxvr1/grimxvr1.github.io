@@ -993,32 +993,7 @@ async function runRound() {
   const gameOver            = survivors.length <= 1 || survivedToThreshold;
 
   // ── 4. Fetch summary (runs during animation) ──────────────────────────────
-  const aliveNames   = survivors.map(t => `${t.name} (${t.cls})`).join(', ');
-  const eventSummary = events.map(e => `${e.warrior.name}: ${e.text}`).join(' ');
-
-  let summaryText = buildFallbackSummary(state.round, events, diedThisRound, survivors, state.arena);
-  try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model:      "claude-sonnet-4-20250514",
-        max_tokens: 120,
-        system:     "You write punchy two-sentence gothic medieval Iron Harvest day summaries for a lord's chronicle. Third-person only. No markdown.",
-        messages:   [{ role: "user", content:
-          `Gothic medieval Iron Harvest, Day ${state.round}. Setting: ${state.arena}.
-Events: ${eventSummary}
-Deaths: ${deathNames.join(', ') || 'none'}.
-Still standing: ${aliveNames || 'none'}.
-Two short dramatic sentences. Gothic tone. No markdown.`
-        }]
-      })
-    });
-    if (resp.ok) {
-      const data = await resp.json();
-      summaryText = data.content.map(c => c.text || '').join('').trim() || summaryText;
-    }
-  } catch(e) { /* CORS or network — use local fallback summary */ }
+  const summaryText = buildFallbackSummary(state.round, events, diedThisRound, survivors, state.arena);
 
   state.history.push(`Day ${state.round}: ${summaryText}`);
 
