@@ -51,6 +51,11 @@
   .flame-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
   .flame-icon { color: var(--ember); font-size: 20px; animation: flicker 2s ease-in-out infinite; }
 
+  @keyframes b-pulse {
+    from { opacity: 0.55; text-shadow: 0 0 20px rgba(201,168,76,0.2); }
+    to   { opacity: 1;    text-shadow: 0 0 50px rgba(201,168,76,0.6); }
+  }
+
   @keyframes flicker {
     0%,100% { opacity:1; transform:scaleY(1); }
     50%      { opacity:0.65; transform:scaleY(0.88); }
@@ -137,7 +142,7 @@
   /* Game */
   #game-area { display: none; position: relative; }
 
-  .game-layout { display: flex; gap: 0; align-items: flex-start; position: relative; }
+  .game-layout { display: flex; align-items: flex-start; position: relative; }
 
   .game-main { flex: 1; min-width: 0; }
 
@@ -238,7 +243,6 @@
   .round-body-inner { padding: 12px 14px 14px; }
 
   .warrior-events { border: 1px solid rgba(201,168,76,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
-  .round-body-inner .warrior-events { margin-bottom: 12px; }
   .event-row { display: grid; grid-template-columns: 148px 1fr; border-bottom: 1px solid rgba(201,168,76,0.06); }
   .event-row:last-child { border-bottom: none; }
   .event-who {
@@ -301,19 +305,6 @@
   .btn-restart { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; padding: 12px 32px; cursor: pointer; border-radius: 2px; transition: all 0.3s; }
   .btn-restart:hover { border-color: var(--gold); color: var(--gold); }
 
-  .win-ledger {
-    background: rgba(0,0,0,0.35); border: 1px solid rgba(201,168,76,0.15);
-    border-left: 3px solid var(--gold-dim); border-radius: 0 2px 2px 0;
-    padding: 16px 20px; max-width: 360px; margin: 0 auto 28px; text-align: left;
-  }
-  .win-ledger-title {
-    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.4em;
-    color: var(--gold-dim); text-transform: uppercase; margin-bottom: 12px;
-  }
-  .win-ledger-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-  .win-ledger-name { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.12em; color: var(--gold); flex: 1; }
-  .win-ledger-count { font-family: 'EB Garamond', serif; font-size: 14px; color: var(--text); }
-  .win-ledger-rows span { display: flex; justify-content: space-between; }
   .btn-download-wins {
     width: 100%; padding: 8px; background: transparent;
     border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
@@ -376,21 +367,12 @@
     margin-top: 8px;
   }
 
-  .sword-left {
-    font-size: 72px;
-    line-height: 1;
-    user-select: none;
-    transform: rotate(-45deg);
+  .sword-left, .sword-right {
+    font-size: 72px; line-height: 1; user-select: none;
     filter: drop-shadow(0 0 10px rgba(201,168,76,0.5));
   }
-
-  .sword-right {
-    font-size: 72px;
-    line-height: 1;
-    user-select: none;
-    transform: rotate(45deg) scaleX(-1);
-    filter: drop-shadow(0 0 10px rgba(201,168,76,0.5));
-  }
+  .sword-left  { transform: rotate(-45deg); }
+  .sword-right { transform: rotate(45deg) scaleX(-1); }
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--ash); }
@@ -545,6 +527,7 @@
     <div class="gm-body">
       <div class="gm-panel-actions">
         <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='guide.html'">📖 Guide</button>
         <button class="btn-logout" onclick="logout()">⇥ Logout</button>
       </div>
     </div>
@@ -610,6 +593,8 @@ function logout() {
 
 // Auto-unlock if already authenticated this session
 document.addEventListener('DOMContentLoaded', function() {
+  setRandomSubtitle();
+
   if (sessionStorage.getItem('ih-auth') === '1') {
     unlock();
   }
@@ -639,8 +624,6 @@ function setRandomSubtitle() {
   }
 }
 
-// Set random subtitle on page load
-setRandomSubtitle();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // EVENT LOADING — callback when events.js has loaded
@@ -700,12 +683,13 @@ let sessionCards = [];
 let state = {};
 
 function rand(arr)   { return arr[Math.floor(Math.random() * arr.length)]; }
-function shuffle(arr){ return [...arr].sort(() => Math.random() - 0.5); }
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function fill(t, n)  { return t.replace(/\{name\}/g, n); }
 function pickUnique(pool, used) {
-  let attempts = 0, idx;
-  do { idx = Math.floor(Math.random() * pool.length); attempts++; }
-  while (used.has(idx) && attempts < pool.length * 2);
+  if (used.size >= pool.length) used.clear(); // reset when pool exhausted
+  let idx;
+  do { idx = Math.floor(Math.random() * pool.length); }
+  while (used.has(idx));
   used.add(idx);
   return pool[idx];
 }
@@ -861,27 +845,26 @@ async function runRound() {
   const deathsAllowed = state.round > 2;
 
   if (deathsAllowed) {
-    if (state.tributes.length === 4) {
-      for (const t of shuffle(alive)) {
-        if (state.tributes.filter(x => x.alive).length <= 1) break;
-        if (Math.random() < 0.12) { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); }
-      }
-    } else if (isFirst) {
+    const killRate = alive.length <= 3 ? 0.25 : 0.12;
+    const assignDeath = t => { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); };
+    if (isFirst) {
       const n = Math.max(1, Math.floor(Math.random() * (Math.min(3, alive.length-1) + 1)));
-      shuffle(alive).slice(0, n).forEach(t => { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); });
+      shuffle(alive).slice(0, n).forEach(assignDeath);
     } else {
+      let aliveCount = alive.length;
       for (const t of shuffle(alive)) {
-        if (state.tributes.filter(x => x.alive).length <= 1) break;
-        if (Math.random() < (alive.length <= 3 ? 0.25 : 0.12)) { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); }
+        if (aliveCount <= 1) break;
+        if (Math.random() < killRate) { assignDeath(t); aliveCount--; }
       }
     }
   }
 
   // ── 2. Events ─────────────────────────────────────────────────────────────
+  const deadIds = new Set(diedThisRound.map(d => d.id));
   const events = alive.map(t => {
-    if (diedThisRound.find(d => d.id === t.id)) return { warrior:t, type:'death',       text: t._death };
-    if (Math.random() < 0.6)                    return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      state.usedA), t.name) };
-    return                                              { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, state.usedC), t.name) };
+    if (deadIds.has(t.id))      return { warrior:t, type:'death',       text: t._death };
+    if (Math.random() < 0.6)   return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      state.usedA), t.name) };
+    return                             { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, state.usedC), t.name) };
   });
 
   // ── 3. Build block (hidden until overlay fades) ───────────────────────────
@@ -1022,9 +1005,9 @@ function recordWins(victors, defaultNames) {
 }
 
 function downloadWinsJSON(record) {
-  const sorted = Object.entries(record)
-    .sort((a, b) => b[1].wins - a[1].wins)
-    .reduce((obj, [k, v]) => { obj[k] = v; return obj; }, {});
+  const sorted = Object.fromEntries(
+    Object.entries(record).sort((a, b) => b[1].wins - a[1].wins)
+  );
   const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');

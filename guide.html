@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Iron Harvest — Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #7a5f2a;
+    --blood: #8b1a1a;
+    --ash: #1a1714;
+    --parchment: #e8dcc8;
+    --ember: #d4622a;
+    --text: #d4c9b0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ash);
+    color: var(--text);
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.35;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%);
+    pointer-events: none; z-index: 999;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 100px; position: relative; z-index: 1; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--ash); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+  @keyframes flicker {
+    0%,100% { opacity:1; transform:scaleY(1); }
+    50%      { opacity:0.65; transform:scaleY(0.88); }
+  }
+
+  /* Nav */
+  .page-nav {
+    display: flex; align-items: center; padding: 24px 0 8px;
+  }
+  .btn-page-back {
+    background: transparent; border: 1px solid rgba(201,168,76,0.2);
+    color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; padding: 8px 16px;
+    cursor: pointer; border-radius: 2px; transition: all 0.2s; text-decoration: none;
+    display: inline-block;
+  }
+  .btn-page-back:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* Page header */
+  .page-header { text-align: center; padding: 20px 0 40px; }
+  .flame-divider { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 16px; }
+  .flame-line { height: 1px; width: 80px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .flame-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
+  .flame-icon { color: var(--ember); font-size: 20px; animation: flicker 2s ease-in-out infinite; }
+  .page-title {
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(20px, 4vw, 32px);
+    color: var(--gold); letter-spacing: 0.08em;
+    text-shadow: 0 0 40px rgba(201,168,76,0.3); margin-top: 12px;
+  }
+  .page-subtitle {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em;
+    color: var(--gold-dim); margin-top: 8px; text-transform: uppercase;
+  }
+
+  /* Guide sections */
+  .guide-section {
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, rgba(42,37,32,0.7), rgba(26,23,20,0.8));
+    border: 1px solid rgba(201,168,76,0.15); border-radius: 2px;
+    overflow: hidden; position: relative;
+  }
+  .guide-section::before {
+    content: ''; position: absolute; inset: 4px;
+    border: 1px solid rgba(201,168,76,0.05); pointer-events: none;
+  }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+    cursor: pointer; user-select: none;
+    transition: background 0.2s;
+  }
+  .section-header:hover { background: rgba(201,168,76,0.05); }
+  .section-icon { font-size: 16px; flex-shrink: 0; }
+  .section-title {
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.4em;
+    color: var(--gold); text-transform: uppercase; flex: 1;
+  }
+  .section-toggle {
+    font-size: 11px; color: var(--gold-dim); transition: transform 0.25s ease;
+  }
+  .guide-section.collapsed .section-toggle { transform: rotate(-90deg); }
+  .guide-section.collapsed .section-body { display: none; }
+
+  .section-body { padding: 22px 24px 26px; }
+
+  /* Text styles */
+  .guide-section p {
+    line-height: 1.75; color: var(--text); margin-bottom: 14px; font-size: 16px;
+  }
+  .guide-section p:last-child { margin-bottom: 0; }
+
+  .guide-section strong { color: var(--parchment); font-weight: 600; }
+  .guide-section em { color: var(--gold-dim); font-style: italic; }
+
+  /* Info grid */
+  .info-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px; margin-top: 16px;
+  }
+  .info-card {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 2px; padding: 12px 14px;
+  }
+  .info-card-label {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.35em;
+    color: var(--gold-dim); text-transform: uppercase; margin-bottom: 6px;
+  }
+  .info-card-value {
+    font-size: 15px; color: var(--parchment); line-height: 1.5;
+  }
+
+  /* Tag pills */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .tag-pill {
+    font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.2em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 2px;
+  }
+  .tag-action      { background: rgba(201,168,76,0.1); color: #a88030; border: 1px solid rgba(201,168,76,0.18); }
+  .tag-consequence { background: rgba(212,98,42,0.1); color: var(--ember); border: 1px solid rgba(212,98,42,0.2); }
+  .tag-death       { background: rgba(139,26,26,0.18); color: #c04040; border: 1px solid rgba(139,26,26,0.28); }
+  .tag-neutral     { background: rgba(201,168,76,0.07); color: var(--gold-dim); border: 1px solid rgba(201,168,76,0.12); }
+
+  /* Probability table */
+  .prob-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .prob-table th {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    color: var(--gold-dim); text-transform: uppercase; padding: 9px 12px;
+    text-align: left; font-weight: 400;
+    background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+  .prob-table td {
+    padding: 9px 12px; font-size: 15px; color: var(--text);
+    border-bottom: 1px solid rgba(201,168,76,0.06);
+  }
+  .prob-table tr:last-child td { border-bottom: none; }
+  .prob-table tr:hover td { background: rgba(201,168,76,0.03); }
+  .prob-val { color: var(--gold); font-family: 'Cinzel', serif; font-size: 13px; }
+
+  /* Highlight box */
+  .callout {
+    background: rgba(0,0,0,0.3); border-left: 3px solid var(--gold-dim);
+    border-radius: 0 2px 2px 0; padding: 14px 18px; margin: 16px 0;
+    font-size: 15px; line-height: 1.7; color: var(--text);
+  }
+  .callout.blood { border-left-color: var(--blood); }
+  .callout.ember { border-left-color: var(--ember); }
+  .callout strong { color: var(--parchment); }
+
+  /* Arena list */
+  .arena-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .arena-row {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 10px 14px; background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(201,168,76,0.1); border-radius: 2px;
+  }
+  .arena-name {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.15em;
+    color: var(--gold); text-transform: uppercase; white-space: nowrap; min-width: 180px;
+  }
+  .arena-desc { font-size: 14px; color: var(--text); line-height: 1.5; }
+
+  /* Class grid */
+  .class-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .class-card {
+    padding: 10px 12px; background: rgba(212,98,42,0.06);
+    border: 1px solid rgba(212,98,42,0.15); border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.2em;
+    color: var(--ember); text-transform: uppercase; text-align: center;
+  }
+
+  /* Keep grid */
+  .keep-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .keep-card {
+    padding: 8px 12px; background: rgba(122,95,42,0.07);
+    border: 1px solid rgba(122,95,42,0.18); border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.2em;
+    color: var(--gold-dim); text-transform: uppercase; text-align: center;
+  }
+
+  /* Divider */
+  .guide-divider {
+    display: flex; align-items: center; gap: 12px; margin: 40px 0 8px;
+  }
+  .guide-divider-line { flex: 1; height: 1px; background: rgba(201,168,76,0.1); }
+  .guide-divider-icon { color: var(--ember); font-size: 14px; }
+
+  /* Pool count badges */
+  .pool-counts { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .pool-badge {
+    padding: 6px 14px; border-radius: 2px; font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
+  }
+
+  /* Survival formula box */
+  .formula-box {
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.1em;
+    color: var(--gold); background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 2px;
+    padding: 16px 20px; margin: 16px 0; text-align: center;
+    line-height: 2;
+  }
+  .formula-box .formula-note {
+    font-family: 'EB Garamond', serif; font-size: 14px;
+    color: var(--gold-dim); font-style: italic; margin-top: 4px;
+    display: block; letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="page-nav">
+    <a href="index.html" class="btn-page-back">&#8592; Back to Battle</a>
+  </div>
+
+  <div class="page-header">
+    <div class="flame-divider">
+      <div class="flame-line"></div>
+      <div class="flame-icon">&#x2694;</div>
+      <div class="flame-line r"></div>
+    </div>
+    <div class="page-title">The Iron Harvest Guide</div>
+    <div class="page-subtitle">A Lord's Compendium — Rules, Mechanics &amp; Lore</div>
+  </div>
+
+  <!-- ═══ OVERVIEW ═══ -->
+  <div class="guide-section" id="sec-overview">
+    <div class="section-header" onclick="toggleSection('sec-overview')">
+      <span class="section-icon">⚔</span>
+      <span class="section-title">What is the Iron Harvest?</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Iron Harvest</strong> is a gothic medieval battle simulation played out day by day in a cursed arena of your choosing. Warriors from rival keeps are thrown together with no allies, no quarter, and no guarantee of mercy — from each other or from the Gauntlet itself.</p>
+      <p>You are the lord presiding over this spectacle. You choose the arena, summon the warriors, name them if you wish, and then watch the chronicle unfold. Each day, every living warrior experiences an <strong>Action</strong> or <strong>Consequence</strong> drawn from a pool of hundreds of events — and some meet their end entirely.</p>
+      <p>At the close of each day, an AI scribe composes a two-sentence gothic summary of everything that transpired and adds it to the chronicle. The game ends when a single champion remains standing — or when enough time has passed that the lord grants a pardon to the survivors.</p>
+      <div class="callout">
+        <strong>The Iron Harvest is a spectator experience.</strong> There are no decisions to make once the horn sounds. Sit back, read the chronicle, and let fate — and a healthy dose of chaos — do the rest.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SETUP ═══ -->
+  <div class="guide-section" id="sec-setup">
+    <div class="section-header" onclick="toggleSection('sec-setup')">
+      <span class="section-icon">✦</span>
+      <span class="section-title">Setting Up the Harvest</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Before sounding the horn, the lord makes two choices and optionally names their warriors.</p>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-label">Warrior Count</div>
+          <div class="info-card-value">Choose 4, 6, 8, 12, 16, or 24 warriors. More warriors means longer games and more dramatic chronicles.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">The Arena</div>
+          <div class="info-card-value">Seven cursed grounds to choose from. The arena flavours the AI scribe's daily summaries but does not affect the underlying odds.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Warrior Names</div>
+          <div class="info-card-value">Leave any card blank and a default name is assigned. Only custom-named warriors are recorded in the Chronicle of Victories.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Class &amp; Keep</div>
+          <div class="info-card-value">Each warrior is randomly assigned a class and keep at setup. These are cosmetic — they appear in events and the ledger but carry no mechanical bonuses.</div>
+        </div>
+      </div>
+
+      <p style="margin-top:18px;">Each warrior card shows a <strong>number</strong> (their position), a <strong>class badge</strong> in ember, and their <strong>keep</strong> in dim gold at the bottom. Type a name into the field to claim them — or leave it empty to let the Gauntlet choose.</p>
+    </div>
+  </div>
+
+  <!-- ═══ ARENAS ═══ -->
+  <div class="guide-section" id="sec-arenas">
+    <div class="section-header" onclick="toggleSection('sec-arenas')">
+      <span class="section-icon">🏰</span>
+      <span class="section-title">The Seven Arenas</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>The arena is passed to the AI scribe each day as context for the chronicle. Choose the ground that fits the story you want told.</p>
+      <div class="arena-list">
+        <div class="arena-row">
+          <span class="arena-name">Cursed Cathedral Ruins</span>
+          <span class="arena-desc">Fog, fallen masonry, and the echo of old prayers. The most gothic of the grounds.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">Fortress Dungeon</span>
+          <span class="arena-desc">A labyrinthine dungeon beneath a collapsed fortress. Dark corridors, traps, and no exits.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">Frozen Haunted Moor</span>
+          <span class="arena-desc">Spectral knights, black ice, and winds that carry the screams of the long dead.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">Plague Village</span>
+          <span class="arena-desc">Rotting barricades and poisoned wells. Surviving the other warriors may be the easier challenge.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">Drowned Castle</span>
+          <span class="arena-desc">Flooded halls and sea serpents lurking below the waterline. Every passage is a gamble.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">The God's Forge</span>
+          <span class="arena-desc">A volcanic crater worshipped as a divine forge, raining embers from above.</span>
+        </div>
+        <div class="arena-row">
+          <span class="arena-name">Bloodthorn Colosseum</span>
+          <span class="arena-desc">An ancient colosseum overgrown with bloodthorn vines. Spectacle and suffering in equal measure.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CLASSES & KEEPS ═══ -->
+  <div class="guide-section" id="sec-classes">
+    <div class="section-header" onclick="toggleSection('sec-classes')">
+      <span class="section-icon">⚜</span>
+      <span class="section-title">Classes &amp; Keeps</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Every warrior enters the Harvest bearing a <strong>class</strong> and a <strong>keep</strong>, both assigned randomly at the start of each game. These are purely narrative — they shape how warriors appear in the event log and the ledger, but grant no mechanical advantage.</p>
+
+      <p><strong>The Twelve Classes:</strong></p>
+      <div class="class-grid">
+        <div class="class-card">Knight</div>
+        <div class="class-card">Dark Mage</div>
+        <div class="class-card">Plague Doctor</div>
+        <div class="class-card">Siege Master</div>
+        <div class="class-card">Inquisitor</div>
+        <div class="class-card">Sellsword</div>
+        <div class="class-card">Shadow Monk</div>
+        <div class="class-card">Warlock</div>
+        <div class="class-card">Flagellant</div>
+        <div class="class-card">Ironclad</div>
+        <div class="class-card">Witch Hunter</div>
+        <div class="class-card">Death Herald</div>
+      </div>
+
+      <p style="margin-top:18px;"><strong>The Twelve Keeps:</strong></p>
+      <div class="keep-grid">
+        <div class="keep-card">Ashenveil</div>
+        <div class="keep-card">Dreadmoor</div>
+        <div class="keep-card">Grimholt</div>
+        <div class="keep-card">Ironspire</div>
+        <div class="keep-card">Ravenwatch</div>
+        <div class="keep-card">Soulbarrow</div>
+        <div class="keep-card">Thorngate</div>
+        <div class="keep-card">Wraithfen</div>
+        <div class="keep-card">Blackmere</div>
+        <div class="keep-card">Dunspire</div>
+        <div class="keep-card">Fanghold</div>
+        <div class="keep-card">Mordenvast</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HOW A DAY WORKS ═══ -->
+  <div class="guide-section" id="sec-days">
+    <div class="section-header" onclick="toggleSection('sec-days')">
+      <span class="section-icon">☀</span>
+      <span class="section-title">How a Day Unfolds</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Each day follows the same sequence. The battle overlay rises, the Gauntlet runs its calculations in the background, and the chronicle block fades in once the scribe has composed the day's summary.</p>
+
+      <div class="callout ember">
+        <strong>Step 1 — Deaths are resolved first.</strong> Before anyone acts, the Gauntlet decides who dies. Deaths are forbidden on Day 1 and Day 2 — the opening days are for establishing the chronicle.
+      </div>
+      <div class="callout">
+        <strong>Step 2 — Events are assigned.</strong> Every surviving warrior (and every warrior who died this day) receives one event. The dead receive their death narrative. The living each get either an Action or a Consequence, chosen at random.
+      </div>
+      <div class="callout">
+        <strong>Step 3 — The scribe writes.</strong> The day's events, deaths, arena, and surviving warriors are sent to the AI scribe, which composes a two-sentence gothic summary. While you watch the battle overlay, the summary is being written in the background.
+      </div>
+      <div class="callout ember">
+        <strong>Step 4 — The chronicle block appears.</strong> Previous days collapse automatically so the new day is always front and centre. You can re-expand any day by clicking its header.
+      </div>
+
+      <p>Once a day completes, the <strong>▶ Next Day</strong> button appears at the bottom. Click it whenever you're ready — the Harvest does not advance on its own.</p>
+    </div>
+  </div>
+
+  <!-- ═══ DEATH MECHANICS ═══ -->
+  <div class="guide-section" id="sec-death">
+    <div class="section-header" onclick="toggleSection('sec-death')">
+      <span class="section-icon">☠</span>
+      <span class="section-title">Death &amp; Survival Odds</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Death in the Iron Harvest is probabilistic — nobody is safe, but nobody is certain to fall either. The Gauntlet evaluates each warrior independently each day. The probability of death depends on how many warriors remain.</p>
+
+      <table class="prob-table">
+        <thead>
+          <tr>
+            <th>Situation</th>
+            <th>Death Chance Per Warrior</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Day 1 &amp; Day 2</td>
+            <td class="prob-val">0%</td>
+            <td>No deaths. The chronicle begins.</td>
+          </tr>
+          <tr>
+            <td>Day 3+ — 4 or more warriors alive</td>
+            <td class="prob-val">12%</td>
+            <td>Standard rate.</td>
+          </tr>
+          <tr>
+            <td>Day 3+ — 3 or fewer warriors alive</td>
+            <td class="prob-val">25%</td>
+            <td>Pressure increases as the field narrows.</td>
+          </tr>
+          <tr>
+            <td>The first day of a 4-warrior game</td>
+            <td class="prob-val">12%</td>
+            <td>Small games use the standard rate throughout.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout blood" style="margin-top:16px;">
+        <strong>The last warrior standing is always protected.</strong> The Gauntlet will never kill the final survivor — at least one warrior will always walk out of each day alive.
+      </div>
+
+      <p>Death chances are evaluated per warrior, per day, independently. It is entirely possible — and not rare — for nobody to die on a given day, or for several warriors to fall at once. The Gauntlet is indifferent.</p>
+    </div>
+  </div>
+
+  <!-- ═══ EVENTS ═══ -->
+  <div class="guide-section" id="sec-events">
+    <div class="section-header" onclick="toggleSection('sec-events')">
+      <span class="section-icon">✧</span>
+      <span class="section-title">Events — Actions, Consequences &amp; Deaths</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Every warrior receives one event per day. Events come from three pools, and <strong>no event will repeat within a single game</strong> — once an entry has been used, it is retired until a new game begins.</p>
+
+      <div class="tag-row">
+        <span class="tag-pill tag-action">Action</span>
+        <span class="tag-pill tag-consequence">Consequence</span>
+        <span class="tag-pill tag-death">☠ Slain</span>
+      </div>
+
+      <div class="pool-counts" style="margin-top:16px;">
+        <div class="info-card" style="flex:1; min-width:140px;">
+          <div class="info-card-label">Actions</div>
+          <div class="info-card-value" style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold);">139</div>
+          <div style="font-size:13px;color:var(--text);margin-top:4px;">Things warriors do — survivalist, tactical, or magnificently absurd.</div>
+        </div>
+        <div class="info-card" style="flex:1; min-width:140px;">
+          <div class="info-card-label">Consequences</div>
+          <div class="info-card-value" style="font-family:'Cinzel',serif;font-size:22px;color:var(--ember);">141</div>
+          <div style="font-size:13px;color:var(--text);margin-top:4px;">Things that happen to warriors — setbacks, embarrassments, near-misses.</div>
+        </div>
+        <div class="info-card" style="flex:1; min-width:140px;">
+          <div class="info-card-label">Deaths</div>
+          <div class="info-card-value" style="font-family:'Cinzel',serif;font-size:22px;color:#c04040;">60</div>
+          <div style="font-size:13px;color:var(--text);margin-top:4px;">How warriors meet their end. Grave, absurd, or somewhere between.</div>
+        </div>
+      </div>
+
+      <p style="margin-top:18px;">Each living warrior has a <strong>60% chance of receiving an Action</strong> and a <strong>40% chance of receiving a Consequence</strong> on any given day. The distinction is purely narrative — neither is mechanically better or worse.</p>
+
+      <div class="callout">
+        The event pools blend genuine gothic survival grit with physical comedy. A warrior might set an elaborate tripwire alarm, then accidentally walk through it themselves the very next day. The Harvest does not discriminate between the heroic and the hapless.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VICTORY CONDITIONS ═══ -->
+  <div class="guide-section" id="sec-victory">
+    <div class="section-header" onclick="toggleSection('sec-victory')">
+      <span class="section-icon">⚜</span>
+      <span class="section-title">Victory Conditions</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>The Iron Harvest ends in one of three ways:</p>
+
+      <div class="callout">
+        <strong>Last Warrior Standing.</strong> All other warriors have perished. The survivor is declared Champion and their name is etched into the Chronicle of Victories — if they were custom-named.
+      </div>
+      <div class="callout ember">
+        <strong>Survival Victory (Lord's Pardon).</strong> If enough days pass with multiple warriors still alive, the lord grants a pardon. The surviving warriors share the victory. The day threshold scales with the number of warriors you began with.
+      </div>
+      <div class="callout blood">
+        <strong>All Fallen.</strong> Every warrior has perished. The Harvest claims all — an ill omen even the lord has never witnessed before. There is no Champion.
+      </div>
+
+      <p><strong>Survival Victory threshold by warrior count:</strong></p>
+      <div class="formula-box">
+        Pardon Day = ⌈ Warriors ÷ 4 × 10 ⌉
+        <span class="formula-note">4 warriors → Day 10 &nbsp;·&nbsp; 8 warriors → Day 20 &nbsp;·&nbsp; 16 warriors → Day 40 &nbsp;·&nbsp; 24 warriors → Day 60</span>
+      </div>
+
+      <p>This means larger games run longer before the lord's patience expires, giving the Gauntlet more time to thin the field naturally.</p>
+    </div>
+  </div>
+
+  <!-- ═══ CHRONICLE OF VICTORIES ═══ -->
+  <div class="guide-section" id="sec-ledger">
+    <div class="section-header" onclick="toggleSection('sec-ledger')">
+      <span class="section-icon">📜</span>
+      <span class="section-title">Chronicle of Victories &amp; the Ledger</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>Wins are tracked across sessions in your browser's local storage. Every time a custom-named warrior wins a game, their victory count increments and their most recent class and keep are recorded.</p>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-label">Custom Names Only</div>
+          <div class="info-card-value">Warriors using default Gauntlet names are never recorded. Only warriors you have personally named can join the ledger.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Shared Victories</div>
+          <div class="info-card-value">In a Survival Victory, all surviving warriors are recorded as champions — not just one.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Persist Across Devices</div>
+          <div class="info-card-value">Use the Download and Import buttons on the ledger page to back up your chronicle and restore it on another device.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Rank Symbols</div>
+          <div class="info-card-value">❤ 1st · ✡ 2nd · ✠ 3rd · Numbers for all others. Sorted by total wins, descending.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GM PANEL ═══ -->
+  <div class="guide-section" id="sec-gm">
+    <div class="section-header" onclick="toggleSection('sec-gm')">
+      <span class="section-icon">⚙</span>
+      <span class="section-title">The Game Master Panel</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Game Master Panel</strong> appears on the right side of the screen once Day 1 begins. It gives the presiding lord a set of tools to intervene in the Harvest.</p>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-label">Warrior List</div>
+          <div class="info-card-value">Shows every warrior, colour-coded by status. Gold names are alive; red names have fallen.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">✧ Revive</div>
+          <div class="info-card-value">The ✧ button appears beside fallen warriors. Click it to return them to life — the Gauntlet has no objection.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">↺ Start Over</div>
+          <div class="info-card-value">Reloads the page and returns to setup. All chronicle progress for the current game is lost.</div>
+        </div>
+      </div>
+
+      <p style="margin-top:14px;">The panel is <strong>collapsible</strong> — click its header to tuck it away. It remembers nothing between sessions; it reflects only the current game state.</p>
+
+      <div class="callout">
+        The <strong>Navigation Panel</strong> on the left is always visible. Use it to reach the Ledger, this Guide, or to log out. It remains accessible throughout setup and during a game.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TIPS ═══ -->
+  <div class="guide-section" id="sec-tips">
+    <div class="section-header" onclick="toggleSection('sec-tips')">
+      <span class="section-icon">🕯</span>
+      <span class="section-title">Tips for the Lord</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <p><strong>Name your warriors after real people.</strong> The events read very differently when the hapless warrior who gets outwitted by a dungeon rat is your colleague.</p>
+      <p><strong>Start with 8 warriors.</strong> It's the default for a reason — long enough for the chronicle to develop personality, short enough that it concludes in a reasonable session.</p>
+      <p><strong>Use the revive button sparingly.</strong> The Gauntlet earned that kill. Reviving a fallen warrior cheapens the drama — but sometimes the story demands it.</p>
+      <p><strong>Read the day summaries aloud.</strong> The AI scribe writes for an audience. The gothic tone lands better spoken.</p>
+      <p><strong>Download your ledger occasionally.</strong> Browser storage can be cleared. If you have a warrior with a proud win record, back them up.</p>
+      <p><strong>Large games (16–24 warriors) become a saga.</strong> With 24 warriors the pardon doesn't come until Day 60, and the pool of 139 actions and 141 consequences means almost no event will repeat before the game ends.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+</script>
+</body>
+</html>
