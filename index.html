@@ -446,7 +446,6 @@
   }
   .btn-gm-ledger:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
 </style>
-<script src="nav.js"></script>
 </head>
 <body class="locked">
 
@@ -527,8 +526,8 @@
     </div>
     <div class="gm-body">
       <div class="gm-panel-actions">
-        <button class="btn-gm-ledger" onclick="navigate('ledger.html')">📜 View Ledger</button>
-        <button class="btn-gm-ledger" onclick="navigate('guide.html')">📖 Guide</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='guide.html'">📖 Guide</button>
         <button class="btn-logout" onclick="logout()">⇥ Logout</button>
       </div>
     </div>
@@ -1094,7 +1093,7 @@ async function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
     // Build view ledger link if any custom winners recorded
     const customVictors = victors.filter(v => !DEFAULT_NAMES.includes(v.name));
     const ledgerBtn = record && customVictors.length > 0
-      ? `<button class="btn-download-wins" style="max-width:280px;margin:0 auto 20px;display:block;" onclick="navigate('ledger.html')">📜 View Chronicle of Victories</button>`
+      ? `<button class="btn-download-wins" style="max-width:280px;margin:0 auto 20px;display:block;" onclick="window.location.href='ledger.html'">📜 View Chronicle of Victories</button>`
       : '';
 
     screen.innerHTML = `
