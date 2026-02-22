@@ -159,6 +159,52 @@
   }
   .btn-reset-ledger:hover { border-color: rgba(195,68,68,0.7); color: rgba(195,68,68,0.9); background: rgba(139,26,26,0.08); }
 
+  /* Deaths table */
+  .deaths-section-header {
+    display: flex; align-items: center; gap: 12px; justify-content: center;
+    margin: 40px 0 20px;
+  }
+  .deaths-section-line { flex: 1; height: 1px; background: rgba(139,26,26,0.25); }
+  .deaths-section-title {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.4em;
+    color: rgba(195,68,68,0.5); text-transform: uppercase;
+  }
+  .deaths-empty {
+    text-align: center; font-style: italic; color: rgba(212,200,176,0.3);
+    padding: 24px 0; font-size: 15px;
+  }
+  .deaths-table {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid rgba(139,26,26,0.15); border-radius: 2px; overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .deaths-table thead tr {
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid rgba(139,26,26,0.2);
+  }
+  .deaths-table th {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.35em;
+    color: rgba(195,68,68,0.45); text-transform: uppercase; padding: 11px 14px;
+    text-align: left; font-weight: 400;
+  }
+  .deaths-table th.col-deaths { text-align: center; }
+  .deaths-table tbody tr {
+    border-bottom: 1px solid rgba(139,26,26,0.08); transition: background 0.15s;
+  }
+  .deaths-table tbody tr:last-child { border-bottom: none; }
+  .deaths-table tbody tr:hover { background: rgba(139,26,26,0.04); }
+  .deaths-table td { padding: 11px 14px; font-size: 15px; color: var(--text); vertical-align: middle; }
+  .deaths-table td.col-name {
+    font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.1em; color: rgba(195,68,68,0.8);
+  }
+  .deaths-table td.col-deaths {
+    text-align: center; font-family: 'Cinzel Decorative', serif;
+    font-size: 16px; color: rgba(195,68,68,0.7); width: 70px;
+  }
+  .deaths-table td.col-last-death {
+    font-size: 13px; color: rgba(212,200,176,0.5); font-style: italic; line-height: 1.4;
+  }
+
   /* Import panel */
   .import-panel {
     background: linear-gradient(135deg, rgba(42,37,32,0.92), rgba(26,23,20,0.96));
@@ -257,6 +303,14 @@
       <button class="btn-download-wins" id="btn-download-ledger">&#x2B07; Download Ledger JSON</button>
       <button class="btn-reset-ledger" onclick="resetLedger()">&#x2715; Reset Ledger</button>
     </div>
+
+    <!-- Deaths section -->
+    <div class="deaths-section-header">
+      <div class="deaths-section-line"></div>
+      <div class="deaths-section-title">&#x2620; Ledger of the Fallen</div>
+      <div class="deaths-section-line"></div>
+    </div>
+    <div id="deaths-content"></div>
   </div>
 
   <!-- ═══ IMPORT SECTION ═══ -->
@@ -320,6 +374,7 @@ function showLedger() {
   document.getElementById('import-section').classList.remove('active');
   document.getElementById('ledger-section').classList.add('active');
   renderLedger();
+  renderDeaths();
 }
 
 function renderLedger() {
@@ -366,10 +421,44 @@ function renderLedger() {
     </table>`;
 }
 
+function renderDeaths() {
+  const record  = loadWinRecord();
+  const el      = document.getElementById('deaths-content');
+  if (!el) return;
+
+  // Only show warriors who have at least one death recorded
+  const entries = Object.entries(record)
+    .filter(([, d]) => d.deaths > 0)
+    .sort((a, b) => b[1].deaths - a[1].deaths);
+
+  if (entries.length === 0) {
+    el.innerHTML = '<div class="deaths-empty">No deaths recorded yet.</div>';
+    return;
+  }
+
+  const rows = entries.map(([name, data]) => `
+    <tr>
+      <td class="col-name">${name}</td>
+      <td class="col-deaths">${data.deaths}</td>
+      <td class="col-last-death">${data.lastDeath || '—'}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <table class="deaths-table">
+      <thead><tr>
+        <th>Warrior</th>
+        <th class="col-deaths">Deaths</th>
+        <th>Last Demise</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
 function resetLedger() {
   if (!confirm('Are you sure you want to reset the entire ledger? This cannot be undone.')) return;
   saveWinRecord({});
   renderLedger();
+  renderDeaths();
 }
 
 // ── Import ───────────────────────────────────────────────────────────────────
@@ -462,6 +551,7 @@ function confirmImport() {
 
 // Init
 renderLedger();
+renderDeaths();
 </script>
 </body>
 </html>

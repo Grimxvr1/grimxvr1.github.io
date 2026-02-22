@@ -1044,13 +1044,27 @@ function saveWinRecord(record) {
 
 function recordWins(victors, defaultNames) {
   const customVictors = victors.filter(v => !defaultNames.includes(v.name));
-  if (customVictors.length === 0) return null;
 
+  // Record deaths for all custom-named fallen warriors
+  const fallen = state.tributes.filter(t => !t.alive && !defaultNames.includes(t.name));
   const record = loadWinRecord();
+
+  fallen.forEach(v => {
+    if (!record[v.name]) record[v.name] = { wins: 0, deaths: 0 };
+    if (!record[v.name].deaths) record[v.name].deaths = 0;
+    record[v.name].deaths++;
+    record[v.name].lastDeath = v._death || null;
+    record[v.name].class = v.cls;
+    record[v.name].keep  = v.keep;
+  });
+
+  if (customVictors.length === 0) {
+    if (fallen.length > 0) saveWinRecord(record);
+    return fallen.length > 0 ? record : null;
+  }
+
   customVictors.forEach(v => {
-    if (!record[v.name]) {
-      record[v.name] = { wins: 0 };
-    }
+    if (!record[v.name]) record[v.name] = { wins: 0, deaths: 0 };
     record[v.name].wins++;
     record[v.name].class = v.cls;
     record[v.name].keep  = v.keep;
@@ -1103,6 +1117,8 @@ async function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
       ${ledgerBtn}
       <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
   } else {
+    // Still record deaths even when all fall
+    recordWins([], DEFAULT_NAMES);
     screen.innerHTML = `
       <div class="outcome-title" style="color:var(--gold-dim);">✦ All Fallen ✦</div>
       <div class="outcome-text">
