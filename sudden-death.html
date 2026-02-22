@@ -544,6 +544,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (sessionStorage.getItem('ih-auth') === '1') unlock();
   const passwordInput = document.getElementById('password-input');
   if (passwordInput) passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+  window._domReady = true;
+  if (window._eventsReady) restoreGame();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -566,13 +568,40 @@ setRandomSubtitle();
 <script src="events.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
+// GAME STATE PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════════════
+const STATE_STORAGE_KEY = 'iron-harvest-sd-state';
+
+function saveGameState() {
+  try {
+    const serialisable = { ...state, usedA: [...state.usedA], usedC: [...state.usedC], usedD: [...state.usedD] };
+    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(serialisable));
+  } catch(e) {}
+}
+
+function clearGameState() { sessionStorage.removeItem(STATE_STORAGE_KEY); }
+
+function loadGameState() {
+  try {
+    const raw = sessionStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    parsed.usedA = new Set(parsed.usedA || []);
+    parsed.usedC = new Set(parsed.usedC || []);
+    parsed.usedD = new Set(parsed.usedD || []);
+    return parsed;
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // EVENT LOADING
 // ═══════════════════════════════════════════════════════════════════════════
 window.onEventsReady = function(pools) {
   window.EVENT_POOLS = pools;
   const btn = document.getElementById('btn-enter');
   if (btn) { btn.disabled = false; btn.textContent = '☠ Sound the Death Knell'; }
-  restoreGame();
+  window._eventsReady = true;
+  if (window._domReady) restoreGame();
 };
 
 function restoreGame() {
@@ -972,8 +1001,7 @@ async function runRound() {
 // ═══════════════════════════════════════════════════════════════════════════
 // WIN TRACKING — separate storage key for Sudden Death
 // ═══════════════════════════════════════════════════════════════════════════
-const WIN_STORAGE_KEY   = 'iron-harvest-sd-wins';
-const STATE_STORAGE_KEY = 'iron-harvest-sd-state';
+const WIN_STORAGE_KEY = 'iron-harvest-sd-wins';
 
 function loadWinRecord() {
   try { const raw = localStorage.getItem(WIN_STORAGE_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -982,27 +1010,6 @@ function loadWinRecord() {
 
 function saveWinRecord(record) {
   try { localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record)); } catch (e) {}
-}
-
-function saveGameState() {
-  try {
-    const serialisable = { ...state, usedA: [...state.usedA], usedC: [...state.usedC], usedD: [...state.usedD] };
-    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(serialisable));
-  } catch(e) {}
-}
-
-function clearGameState() { sessionStorage.removeItem(STATE_STORAGE_KEY); }
-
-function loadGameState() {
-  try {
-    const raw = sessionStorage.getItem(STATE_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    parsed.usedA = new Set(parsed.usedA || []);
-    parsed.usedC = new Set(parsed.usedC || []);
-    parsed.usedD = new Set(parsed.usedD || []);
-    return parsed;
-  } catch(e) { return null; }
 }
 
 function recordWins(victors, defaultNames) {
