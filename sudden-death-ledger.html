@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Iron Harvest — Chronicle of Victories</title>
+<title>The Iron Harvest — Sudden Death Chronicle</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -280,8 +280,8 @@
   <!-- ═══ LEDGER SECTION ═══ -->
   <div id="ledger-section" class="active">
     <div class="page-nav">
-      <a href="index.html" class="btn-page-back">&#8592; Back to Battle</a>
-      <a href="sudden-death.html" class="btn-import-link">&#9760; Sudden Death</a>
+      <a href="sudden-death.html" class="btn-page-back">&#8592; Back to Sudden Death</a>
+      <a href="index.html" class="btn-import-link">&#9876; Standard Game</a>
       <button class="btn-import-link" onclick="showImport()">&#x2B06; Import Ledger</button>
     </div>
     <div class="page-header">
@@ -290,8 +290,8 @@
         <div class="flame-icon">&#x2694;</div>
         <div class="flame-line r"></div>
       </div>
-      <div class="page-title">Chronicle of Victories</div>
-      <div class="page-subtitle">Hall of Champions — Iron Harvest</div>
+      <div class="page-title">Sudden Death Chronicle</div>
+      <div class="page-subtitle">Hall of Champions — Sudden Death Mode</div>
     </div>
     <div class="rank-legend">
       <div class="rank-legend-item"><span class="rank-legend-symbol rank-1">&#x2764;</span> 1st Place</div>
@@ -330,7 +330,7 @@
     </div>
     <div class="import-panel">
       <div class="panel-title">&#x2756; Upload a Previous Ledger File</div>
-      <p class="import-desc">Select a previously downloaded <code>iron-harvest-wins.json</code> file. Wins will be <strong>merged</strong> with the current ledger — existing entries keep whichever win count is higher.</p>
+      <p class="import-desc">Select a previously downloaded <code>iron-harvest-sd-wins.json</code> file. Wins will be <strong>merged</strong> with the current ledger — existing entries keep whichever win count is higher.</p>
       <label class="import-file-label">
         <span id="import-file-text">Choose file…</span>
         <input type="file" id="import-file-input" accept=".json,application/json" onchange="handleImportFile(this)">
@@ -344,7 +344,7 @@
 </div>
 
 <script>
-const WIN_STORAGE_KEY = 'iron-harvest-wins';
+const WIN_STORAGE_KEY = 'iron-harvest-sd-wins';
 
 function loadWinRecord() {
   try {
@@ -366,7 +366,7 @@ function downloadWinsJSON(record) {
   const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'iron-harvest-wins.json'; a.click();
+  a.href = url; a.download = 'iron-harvest-sd-wins.json'; a.click();
   URL.revokeObjectURL(url);
 }
 
@@ -519,7 +519,7 @@ async function handleImportFile(input) {
     document.getElementById('btn-confirm-import').style.display = 'block';
 
   } catch (e) {
-    document.getElementById('import-status').textContent = 'Invalid file — must be a valid iron-harvest-wins.json';
+    document.getElementById('import-status').textContent = 'Invalid file — must be a valid iron-harvest-sd-wins.json';
     document.getElementById('import-status').className = 'import-status error';
     document.getElementById('import-preview').style.display = 'none';
     document.getElementById('btn-confirm-import').style.display = 'none';

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Iron Harvest — An unfolding adventure</title>
+<title>The Iron Harvest — Sudden Death</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -43,7 +43,6 @@
 
   .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
 
-  /* Header */
   header { text-align: center; padding: 48px 0 32px; }
 
   .flame-divider { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 20px; }
@@ -55,7 +54,6 @@
     from { opacity: 0.55; text-shadow: 0 0 20px rgba(201,168,76,0.2); }
     to   { opacity: 1;    text-shadow: 0 0 50px rgba(201,168,76,0.6); }
   }
-
   @keyframes flicker {
     0%,100% { opacity:1; transform:scaleY(1); }
     50%      { opacity:0.65; transform:scaleY(0.88); }
@@ -75,6 +73,15 @@
     color: var(--gold-dim); margin-top: 10px; text-transform: uppercase;
   }
 
+  /* Sudden Death badge */
+  .sd-badge {
+    display: inline-block; margin-top: 10px;
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
+    text-transform: uppercase; padding: 4px 14px; border-radius: 2px;
+    color: rgba(195,68,68,0.9); background: rgba(139,26,26,0.15);
+    border: 1px solid rgba(139,26,26,0.35);
+  }
+
   /* Setup */
   #setup-panel {
     background: linear-gradient(135deg, rgba(42,37,32,0.92), rgba(26,23,20,0.96));
@@ -90,8 +97,7 @@
     margin-bottom: 20px; padding-bottom: 10px;
     border-bottom: 1px solid rgba(201,168,76,0.12);
   }
-  .top-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-  @media (max-width: 520px) { .top-row { grid-template-columns: 1fr; } }
+  .top-row { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
   label {
     display: block; font-family: 'Cinzel', serif; font-size: 10px;
     letter-spacing: 0.25em; color: var(--gold-dim); text-transform: uppercase; margin-bottom: 7px;
@@ -127,26 +133,36 @@
     font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 0.15em;
     color: rgba(122,95,42,0.65); text-transform: uppercase; padding: 0 10px 7px;
   }
+
+  /* Add warrior button */
+  .btn-add-warrior {
+    width: 100%; margin-top: 14px; padding: 10px;
+    background: transparent;
+    border: 1px dashed rgba(201,168,76,0.25); color: var(--gold-dim);
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+  }
+  .btn-add-warrior:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.04); }
+
   .btn-enter {
     width: 100%; margin-top: 24px; padding: 15px;
-    background: linear-gradient(135deg, var(--blood), #5a0f0f);
-    border: 1px solid rgba(201,168,76,0.35); color: var(--gold);
+    background: linear-gradient(135deg, #6b0f0f, #3a0808);
+    border: 1px solid rgba(195,68,68,0.4); color: rgba(195,68,68,0.9);
     font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.35em;
     text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.3s;
   }
   .btn-enter:hover {
-    background: linear-gradient(135deg, #a01f1f, var(--blood));
-    border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4); letter-spacing: 0.44em;
+    background: linear-gradient(135deg, #8b1a1a, #5a0f0f);
+    border-color: rgba(195,68,68,0.8); box-shadow: 0 0 30px rgba(139,26,26,0.5); letter-spacing: 0.44em;
   }
+  .btn-enter:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Game */
   #game-area { display: none; position: relative; }
-
   .game-layout { display: flex; align-items: flex-start; position: relative; }
-
   .game-main { flex: 1; min-width: 0; }
 
-  /* ── Shared side panel base ── */
+  /* Side panels */
   .side-panel {
     position: fixed; top: 24px; z-index: 2000;
     width: 220px; min-width: 220px;
@@ -159,12 +175,10 @@
   .side-panel.collapsed .gm-warrior-list,
   .side-panel.collapsed .gm-title { display: none; }
 
-  /* Navigation panel — left */
   #nav-panel { left: 12px; }
   #nav-panel.collapsed .gm-toggle { transform: rotate(-90deg); }
   #nav-panel.collapsed .gm-header { border-bottom: none; }
 
-  /* Game Master panel — right */
   #game-master-panel { right: 12px; }
   #game-master-panel.collapsed .gm-toggle { transform: rotate(90deg); }
   #game-master-panel.collapsed .gm-header { border-bottom: none; }
@@ -195,8 +209,7 @@
     width: 26px; height: 26px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
-    color: var(--gold); font-size: 12px; cursor: pointer; border-radius: 2px;
-    transition: all 0.2s;
+    color: var(--gold); font-size: 12px; cursor: pointer; border-radius: 2px; transition: all 0.2s;
   }
   .gm-revive-btn:hover { background: rgba(201,168,76,0.3); border-color: var(--gold); }
   .gm-revive-btn.hidden { display: none; }
@@ -216,7 +229,14 @@
   .chip-alive { background: rgba(201,168,76,0.08); color: var(--gold); border: 1px solid rgba(201,168,76,0.22); }
   .chip-dead  { background: rgba(139,26,26,0.07); color: rgba(195,68,68,1); border: 1px solid rgba(139,26,26,0.14); }
 
-  /* Round block */
+  /* Sudden Death indicator on tracker */
+  .sd-indicator {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.25em;
+    color: rgba(195,68,68,0.7); text-transform: uppercase;
+    border: 1px solid rgba(139,26,26,0.3); padding: 2px 8px; border-radius: 2px;
+    background: rgba(139,26,26,0.08);
+  }
+
   .round-block { margin-bottom: 24px; transition: opacity 0.6s ease; border: 1px solid rgba(201,168,76,0.12); border-radius: 2px; overflow: hidden; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
@@ -230,15 +250,11 @@
   }
   .round-header:hover { background: rgba(201,168,76,0.06); }
   .round-header::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(212,98,42,0.4), transparent); }
-  .round-header .collapse-icon {
-    font-size: 12px; color: var(--gold-dim); transition: transform 0.25s ease;
-  }
+  .round-header .collapse-icon { font-size: 12px; color: var(--gold-dim); transition: transform 0.25s ease; }
   .round-block.collapsed .collapse-icon { transform: rotate(-90deg); }
   .round-block.collapsed .round-header { border-bottom: none; }
 
-  .round-body {
-    max-height: 4000px; overflow: hidden; transition: max-height 0.4s ease;
-  }
+  .round-body { max-height: 4000px; overflow: hidden; transition: max-height 0.4s ease; }
   .round-block.collapsed .round-body { max-height: 0 !important; }
   .round-body-inner { padding: 12px 14px 14px; }
 
@@ -269,7 +285,6 @@
   .summary-text { font-style: italic; color: var(--parchment); line-height: 1.65; font-size: 16px; }
   .deaths-banner { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.2em; color: #c04040; text-transform: uppercase; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(139,26,26,0.2); }
 
-  /* Status */
   #status-area { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; min-height: 44px; }
   .status-msg { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em; color: var(--gold-dim); text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
   .btn-next {
@@ -281,8 +296,7 @@
   .btn-next:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.07); }
   .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
   .btn-start-over {
-    width: 100%; margin-top: 10px; padding: 8px;
-    background: transparent;
+    width: 100%; margin-top: 10px; padding: 8px; background: transparent;
     border: 1px solid rgba(139,26,26,0.35); color: rgba(195,68,68,0.6);
     font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
     text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
@@ -296,7 +310,6 @@
   }
   .btn-logout:hover { border-color: rgba(122,95,42,0.5); color: var(--gold-dim); background: rgba(122,95,42,0.06); }
 
-  /* Outcome */
   .outcome-screen { text-align: center; padding: 56px 20px; animation: fadeIn 1s ease-out; }
   .outcome-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(24px, 5vw, 40px); margin-bottom: 16px; }
   .victory { color: var(--gold); text-shadow: 0 0 40px rgba(201,168,76,0.5); }
@@ -304,72 +317,40 @@
   .outcome-text { font-style: italic; color: var(--text); max-width: 520px; margin: 0 auto 32px; line-height: 1.85; font-size: 17px; }
   .btn-restart { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; padding: 12px 32px; cursor: pointer; border-radius: 2px; transition: all 0.3s; }
   .btn-restart:hover { border-color: var(--gold); color: var(--gold); }
-
   .btn-download-wins {
-    width: 100%; padding: 8px; background: transparent;
+    width: 100%; max-width: 280px; padding: 8px; background: transparent;
     border: 1px solid rgba(201,168,76,0.25); color: var(--gold-dim);
     font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.3em;
-    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s; margin: 0 auto 20px; display: block;
   }
   .btn-download-wins:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.06); }
 
-  /* ═══════════════════════════════════════════════════════════════
-     BATTLE OVERLAY
-  ═══════════════════════════════════════════════════════════════ */
   #battle-overlay {
     position: fixed; inset: 0; z-index: 2000;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
     background: radial-gradient(ellipse at center, #1c0e06 0%, #0e0a07 55%, #050302 100%);
     opacity: 0;
   }
-
-  /* Vignette on overlay */
   #battle-overlay::after {
-    content: '';
-    position: absolute; inset: 0; pointer-events: none;
+    content: ''; position: absolute; inset: 0; pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.75) 100%);
   }
-
-  .battle-content {
-    position: relative; z-index: 1;
-    display: flex; flex-direction: column; align-items: center;
-  }
-
+  .battle-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
   .battle-day-label {
-    font-family: 'Cinzel', serif;
-    font-size: 11px; letter-spacing: 0.55em; text-transform: uppercase;
-    color: var(--gold-dim);
-    margin-bottom: 14px;
-    animation: b-pulse 1.2s ease-in-out infinite alternate;
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.55em; text-transform: uppercase;
+    color: var(--gold-dim); margin-bottom: 14px; animation: b-pulse 1.2s ease-in-out infinite alternate;
   }
-
   .battle-title {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: clamp(20px, 4vw, 32px);
-    color: var(--gold);
-    letter-spacing: 0.07em;
-    text-shadow: 0 0 40px rgba(201,168,76,0.45);
-    margin-bottom: 8px;
+    font-family: 'Cinzel Decorative', serif; font-size: clamp(20px, 4vw, 32px);
+    color: rgba(195,68,68,0.9); letter-spacing: 0.07em;
+    text-shadow: 0 0 40px rgba(139,26,26,0.6); margin-bottom: 8px;
     animation: b-pulse 0.9s ease-in-out infinite alternate;
   }
-
-
-
-  /* Sword arena */
-  .battle-arena {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 8px;
-  }
-
+  .battle-arena { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 8px; }
   .sword-left, .sword-right {
     font-size: 72px; line-height: 1; user-select: none;
-    filter: drop-shadow(0 0 10px rgba(201,168,76,0.5));
+    filter: drop-shadow(0 0 10px rgba(195,68,68,0.5));
   }
   .sword-left  { transform: rotate(-45deg); }
   .sword-right { transform: rotate(45deg) scaleX(-1); }
@@ -392,22 +373,10 @@
     position: relative; z-index: 1;
     background: linear-gradient(135deg, rgba(42,37,32,0.95), rgba(26,23,20,0.98));
     border: 1px solid var(--gold-dim); border-radius: 2px;
-    padding: 40px 32px; max-width: 450px; width: 90%;
-    text-align: center;
+    padding: 40px 32px; max-width: 450px; width: 90%; text-align: center;
   }
-  .password-title {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: clamp(20px, 4vw, 28px);
-    color: var(--gold);
-    letter-spacing: 0.08em;
-    text-shadow: 0 0 40px rgba(201,168,76,0.3);
-    margin-bottom: 8px;
-  }
-  .password-subtitle {
-    font-family: 'Cinzel', serif;
-    font-size: 10px; letter-spacing: 0.3em;
-    color: var(--gold-dim); margin-bottom: 24px; text-transform: uppercase;
-  }
+  .password-title { font-family: 'Cinzel Decorative', serif; font-size: clamp(20px, 4vw, 28px); color: var(--gold); letter-spacing: 0.08em; text-shadow: 0 0 40px rgba(201,168,76,0.3); margin-bottom: 8px; }
+  .password-subtitle { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.3em; color: var(--gold-dim); margin-bottom: 24px; text-transform: uppercase; }
   .password-input {
     width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(201,168,76,0.3);
     color: var(--parchment); font-family: 'EB Garamond', serif; font-size: 16px;
@@ -416,11 +385,7 @@
   }
   .password-input:focus { border-color: var(--gold); background: rgba(0,0,0,0.8); }
   .password-input::placeholder { color: rgba(212,200,176,0.4); }
-  .password-error {
-    color: rgba(139,26,26,0.8); font-size: 12px; margin-top: -16px; margin-bottom: 16px;
-    font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase;
-    min-height: 20px;
-  }
+  .password-error { color: rgba(139,26,26,0.8); font-size: 12px; margin-top: -16px; margin-bottom: 16px; font-family: 'Cinzel', serif; letter-spacing: 0.15em; text-transform: uppercase; min-height: 20px; }
   .password-submit {
     width: 100%; padding: 12px;
     background: linear-gradient(135deg, var(--blood), #5a0f0f);
@@ -428,15 +393,10 @@
     font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.3em;
     text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.3s;
   }
-  .password-submit:hover {
-    background: linear-gradient(135deg, #a01f1f, var(--blood));
-    border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4);
-  }
+  .password-submit:hover { background: linear-gradient(135deg, #a01f1f, var(--blood)); border-color: var(--gold); box-shadow: 0 0 30px rgba(139,26,26,0.4); }
   body.locked { overflow: hidden; }
   body.locked > .container { display: none; }
 
-
-  /* GM panel actions group */
   .gm-panel-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
   .btn-gm-ledger {
     width: 100%; padding: 8px; background: transparent;
@@ -464,7 +424,7 @@
 <div id="battle-overlay">
   <div class="battle-content">
     <div class="battle-day-label" id="battle-day-label">Day 1</div>
-    <div class="battle-title">The Battle Commences</div>
+    <div class="battle-title">Sudden Death</div>
     <div class="battle-arena">
       <div class="sword-left">🗡️</div>
       <div class="sword-right">🗡️</div>
@@ -478,26 +438,16 @@
     <img src="images/logo.png" width="400px">
     <div class="flame-divider">
       <div class="flame-line"></div>
-      <div class="flame-icon">⚔</div>
+      <div class="flame-icon">☠</div>
       <div class="flame-line r"></div>
     </div>
     <div class="subtitle" id="subtitle-motto"></div>
+    <div class="sd-badge">☠ Sudden Death Mode — No Grace Period</div>
   </header>
 
   <div id="setup-panel">
-    <div class="panel-title">⚔ Summon the Warriors</div>
+    <div class="panel-title">☠ Summon the Warriors</div>
     <div class="top-row">
-      <div>
-        <label>Number of Warriors</label>
-        <select id="warrior-count" onchange="renderWarriorCards()">
-          <option value="4">4 Warriors</option>
-          <option value="6">6 Warriors</option>
-          <option value="8" selected>8 Warriors</option>
-          <option value="12">12 Warriors</option>
-          <option value="16">16 Warriors</option>
-          <option value="24">24 Warriors</option>
-        </select>
-      </div>
       <div>
         <label>The Iron Harvest Ground</label>
         <select id="arena-type">
@@ -514,20 +464,21 @@
     <div class="warrior-name-section">
       <div class="panel-title">✦ Name the Warriors — leave blank for defaults</div>
       <div class="warrior-grid" id="warrior-grid"></div>
+      <button class="btn-add-warrior" id="btn-add-warrior" onclick="addWarriorCard()">+ Add Warrior</button>
     </div>
     <button class="btn-enter" id="btn-enter" onclick="startGame()" disabled>Loading chronicles…</button>
   </div>
 
   <!-- Navigation Panel (left) -->
   <div id="nav-panel" class="side-panel collapsed">
-    <div class="gm-header" onclick="toggleNavPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNavPanel();}" role="button" tabindex="0">
+    <div class="gm-header" onclick="toggleNavPanel()" role="button" tabindex="0">
       <span class="gm-toggle">▼</span>
       <span class="gm-title">Navigation</span>
     </div>
     <div class="gm-body">
       <div class="gm-panel-actions">
-        <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
-        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death.html'">☠ Sudden Death</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death-ledger.html'">📜 SD Ledger</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='index.html'">⚔ Standard Game</button>
         <button class="btn-gm-ledger" onclick="window.location.href='guide.html'">📖 Guide</button>
         <button class="btn-logout" onclick="logout()">⇥ Logout</button>
       </div>
@@ -536,7 +487,7 @@
 
   <!-- Game Master Panel (right) -->
   <div id="game-master-panel" class="side-panel collapsed" style="display:none;">
-    <div class="gm-header" onclick="toggleGameMasterPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGameMasterPanel();}" role="button" tabindex="0">
+    <div class="gm-header" onclick="toggleGameMasterPanel()" role="button" tabindex="0">
       <span class="gm-toggle">▼</span>
       <span class="gm-title">Game Master</span>
     </div>
@@ -574,16 +525,12 @@ function checkPassword() {
   const input = document.getElementById('password-input');
   const error = document.getElementById('password-error');
   const entered = input.value.trim().toLowerCase();
-  const _0x = atob('aHlwZWhvdXNl'); // obfuscated
-
+  const _0x = atob('aHlwZWhvdXNl');
   if (entered === _0x.toLowerCase()) {
-    input.value = '';
-    error.textContent = '';
-    unlock();
+    input.value = ''; error.textContent = ''; unlock();
   } else {
     error.textContent = 'Incorrect passphrase. Try again.';
-    input.value = '';
-    input.focus();
+    input.value = ''; input.focus();
   }
 }
 
@@ -592,70 +539,56 @@ function logout() {
   location.reload();
 }
 
-// Auto-unlock if already authenticated this session
 document.addEventListener('DOMContentLoaded', function() {
   setRandomSubtitle();
-
-  if (sessionStorage.getItem('ih-auth') === '1') {
-    unlock();
-  }
-
+  if (sessionStorage.getItem('ih-auth') === '1') unlock();
   const passwordInput = document.getElementById('password-input');
-  if (passwordInput) {
-    passwordInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') checkPassword();
-    });
-  }
+  if (passwordInput) passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SUBTITLE MOTTOS — randomize on page load
+// SUBTITLE
 // ═══════════════════════════════════════════════════════════════════════════
 const SUBTITLE_MOTTOS = [
-  'Where Only One Survives',
-  'Enter the Arena of Shadows',
-  'The Last Warrior Stands',
-  'A Battle for the Ages'
+  'Death Comes on the First Dawn',
+  'No Grace. No Mercy. No Quarter.',
+  'Every Day Is Your Last',
+  'The Harvest Waits for No One'
 ];
 
 function setRandomSubtitle() {
-  const subtitleEl = document.getElementById('subtitle-motto');
-  if (subtitleEl) {
-    subtitleEl.textContent = SUBTITLE_MOTTOS[Math.floor(Math.random() * SUBTITLE_MOTTOS.length)];
-  }
+  const el = document.getElementById('subtitle-motto');
+  if (el) el.textContent = SUBTITLE_MOTTOS[Math.floor(Math.random() * SUBTITLE_MOTTOS.length)];
 }
 
-
+setRandomSubtitle();
+</script>
+<script src="events.js"></script>
+<script>
 // ═══════════════════════════════════════════════════════════════════════════
-// EVENT LOADING — callback when events.js has loaded
+// EVENT LOADING
 // ═══════════════════════════════════════════════════════════════════════════
 window.onEventsReady = function(pools) {
   window.EVENT_POOLS = pools;
   const btn = document.getElementById('btn-enter');
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = 'Sound the Horn';
-  }
+  if (btn) { btn.disabled = false; btn.textContent = '☠ Sound the Death Knell'; }
 };
-</script>
-<script src="events.js"></script>
-<script>
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OVERLAY
+// ═══════════════════════════════════════════════════════════════════════════
 function showBattleOverlay(dayNum) {
   const overlay = document.getElementById('battle-overlay');
   document.getElementById('battle-day-label').textContent = `Day ${dayNum}`;
-  overlay.style.display    = 'flex';
-  overlay.style.transition = 'none';
-  overlay.style.opacity    = '0';
+  overlay.style.display = 'flex'; overlay.style.transition = 'none'; overlay.style.opacity = '0';
   void overlay.offsetWidth;
-  overlay.style.transition = 'opacity 0.4s ease';
-  overlay.style.opacity    = '1';
+  overlay.style.transition = 'opacity 0.4s ease'; overlay.style.opacity = '1';
 }
 
 function hideBattleOverlay() {
   return new Promise(resolve => {
     const overlay = document.getElementById('battle-overlay');
-    overlay.style.transition = 'opacity 0.65s ease';
-    overlay.style.opacity    = '0';
+    overlay.style.transition = 'opacity 0.65s ease'; overlay.style.opacity = '0';
     setTimeout(() => { overlay.style.display = 'none'; resolve(); }, 700);
   });
 }
@@ -677,6 +610,8 @@ const KEEPS = [
   'Thorngate','Wraithfen','Blackmere','Dunspire','Fanghold','Mordenvast'
 ];
 
+const MAX_WARRIORS = 24;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // STATE & UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -687,46 +622,53 @@ function rand(arr)   { return arr[Math.floor(Math.random() * arr.length)]; }
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function fill(t, n)  { return t.replace(/\{name\}/g, n); }
 function pickUnique(pool, used) {
-  if (used.size >= pool.length) used.clear(); // reset when pool exhausted
+  if (used.size >= pool.length) used.clear();
   let idx;
-  do { idx = Math.floor(Math.random() * pool.length); }
-  while (used.has(idx));
-  used.add(idx);
-  return pool[idx];
+  do { idx = Math.floor(Math.random() * pool.length); } while (used.has(idx));
+  used.add(idx); return pool[idx];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SETUP RENDER
+// WARRIOR CARD MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════
-function renderWarriorCards() {
-  const count = parseInt(document.getElementById('warrior-count').value);
-  const grid  = document.getElementById('warrior-grid');
-  const names = shuffle(DEFAULT_NAMES);
-  sessionCards = Array.from({ length: count }, (_, i) => ({
-    cls: rand(CLASSES), keep: rand(KEEPS), defaultName: names[i] || `Warrior ${i+1}`
-  }));
+function buildCard(i) {
+  const usedNames = sessionCards.map(c => c.defaultName);
+  const available = shuffle(DEFAULT_NAMES).filter(n => !usedNames.includes(n));
+  const defaultName = available[0] || `Warrior ${i + 1}`;
+  return { cls: rand(CLASSES), keep: rand(KEEPS), defaultName };
+}
+
+function renderAllCards() {
+  const grid = document.getElementById('warrior-grid');
   grid.innerHTML = sessionCards.map((c, i) => `
-    <div class="warrior-card">
+    <div class="warrior-card" id="card-${i}">
       <div class="warrior-card-header">
-        <span class="warrior-num-label">${i+1}</span>
+        <span class="warrior-num-label">${i + 1}</span>
         <span class="class-badge">${c.cls}</span>
       </div>
       <input type="text" id="t-${i}" placeholder="${c.defaultName}" maxlength="22">
       <div class="keep-tag">Keep: ${c.keep}</div>
     </div>`).join('');
+  const addBtn = document.getElementById('btn-add-warrior');
+  if (addBtn) addBtn.style.display = sessionCards.length >= MAX_WARRIORS ? 'none' : '';
 }
-renderWarriorCards();
+
+function addWarriorCard() {
+  if (sessionCards.length >= MAX_WARRIORS) return;
+  sessionCards.push(buildCard(sessionCards.length));
+  renderAllCards();
+}
+
+// Initialise with 1 card
+sessionCards.push(buildCard(0));
+renderAllCards();
 updateGameMasterPanel();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════════════════════════════
 function startGame() {
-  if (!window.EVENT_POOLS) {
-    alert('Event chronicles failed to load. Please refresh the page.');
-    return;
-  }
-  const count = parseInt(document.getElementById('warrior-count').value);
+  if (!window.EVENT_POOLS) { alert('Event chronicles failed to load. Please refresh.'); return; }
   const arena = document.getElementById('arena-type').value;
   const tributes = sessionCards.map((c, i) => {
     const el   = document.getElementById(`t-${i}`);
@@ -750,6 +692,7 @@ function updateTracker() {
     <div class="tracker-stats">
       <div class="stat-chip">Day <span>${state.round}</span></div>
       <div class="stat-chip">Survivors <span>${alive} / ${state.tributes.length}</span></div>
+      <div class="sd-indicator">☠ Sudden Death</div>
     </div>
     <div class="warrior-chips">
       ${state.tributes.map(t => `
@@ -761,13 +704,10 @@ function updateTracker() {
 }
 
 function toggleNavPanel() {
-  const panel = document.getElementById('nav-panel');
-  if (panel) panel.classList.toggle('collapsed');
+  const p = document.getElementById('nav-panel'); if (p) p.classList.toggle('collapsed');
 }
-
 function toggleGameMasterPanel() {
-  const panel = document.getElementById('game-master-panel');
-  if (panel) panel.classList.toggle('collapsed');
+  const p = document.getElementById('game-master-panel'); if (p) p.classList.toggle('collapsed');
 }
 
 function updateGameMasterPanel() {
@@ -775,9 +715,7 @@ function updateGameMasterPanel() {
   const list  = document.getElementById('gm-warrior-list');
   const startOverBtn = document.getElementById('btn-start-over');
   if (!panel || !list) return;
-
   if (state.tributes && state.round >= 1) {
-    // In-game: show panel, warrior list, and start over
     panel.style.display = '';
     list.innerHTML = state.tributes.map(t => `
       <div class="gm-warrior-row ${t.alive ? '' : 'dead'}">
@@ -786,7 +724,6 @@ function updateGameMasterPanel() {
       </div>`).join('');
     if (startOverBtn) startOverBtn.style.display = '';
   } else {
-    // Setup: hide entire panel
     panel.style.display = 'none';
     list.innerHTML = '';
     if (startOverBtn) startOverBtn.style.display = 'none';
@@ -795,11 +732,7 @@ function updateGameMasterPanel() {
 
 function reviveWarrior(id) {
   const t = state.tributes.find(x => x.id === id);
-  if (t && !t.alive) {
-    t.alive = true;
-    delete t._death;
-    updateTracker();
-  }
+  if (t && !t.alive) { t.alive = true; delete t._death; updateTracker(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -811,9 +744,7 @@ function setStatus(mode, label) {
     area.innerHTML = `
       <button class="btn-next" id="next-btn" onclick="advanceRound()">▶ Next Day</button>
       <div class="status-msg">${label || ''}</div>`;
-  } else {
-    area.innerHTML = '';
-  }
+  } else { area.innerHTML = ''; }
 }
 
 function advanceRound() {
@@ -832,8 +763,6 @@ function toggleRoundBlock(headerEl) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LOCAL SUMMARY FALLBACK
-// Generates an atmospheric two-sentence chronicle entry from raw event data.
-// Used whenever the Anthropic API is unreachable (e.g. CORS outside claude.ai).
 // ═══════════════════════════════════════════════════════════════════════════
 function buildFallbackSummary(day, events, dead, survivors, arena) {
   const OPENERS = [
@@ -846,109 +775,85 @@ function buildFallbackSummary(day, events, dead, survivors, arena) {
     `The lord's herald scratched fresh tallies into the chronicle as day ${day} concluded.`,
     `No mercy was offered, and none was sought, as the ${ordinal(day)} day drew its curtain.`,
   ];
-
   const DEATH_LINES = {
     0: [
       `Not one warrior fell today — a rare mercy, or perhaps merely a postponement.`,
       `The Gauntlet claimed no lives this day, though it came close enough to be felt.`,
-      `The field held steady; no death knells tolled, though several warriors would not soon forget their close calls.`,
       `By some dark providence, all warriors lived to see the next dawn.`,
     ],
     1: [
       `One warrior was taken from the field, their name added to the growing ledger of the fallen.`,
       `A single death knell rang out across the grounds — one fewer soul to contest the crown.`,
       `One more name was struck from the rolls of the living before nightfall.`,
-      `The Gauntlet claimed one, as it always claims at least one.`,
     ],
   };
-
   const MANY_DEAD = [
     `${dead.length} warriors were struck from the living rolls before the day was out — the field grows ever thinner.`,
     `${dead.length} death knells rang in succession, each one tightening the noose around the survivors.`,
     `The day's toll was heavy: ${dead.length} fell, and the chronicle grows darker with each entry.`,
-    `${dead.length} more names were added to the ledger of the slain. The Harvest does not negotiate.`,
   ];
-
   const SURVIVOR_LINES = {
     many: [
       `${survivors.length} warriors yet draw breath and sharpen their resolve for what comes next.`,
       `${survivors.length} souls remain — each one wary, each one watching the shadows for what the next day brings.`,
-      `With ${survivors.length} still standing, the contest grows fiercer by the hour.`,
     ],
     few: [
       `Only ${survivors.length} remain now. The end of the Harvest draws near.`,
       `${survivors.length} warriors stand between the crown and the grave. The tension is absolute.`,
-      `The field has narrowed to ${survivors.length}. Every breath feels borrowed.`,
     ],
     one: [
       `One warrior stands alone. The Iron Harvest has found its champion.`,
       `A single soul remains where many began. The chronicle is nearly complete.`,
     ],
   };
-
-  function ordinal(n) {
-    const s = ['th','st','nd','rd'], v = n % 100;
-    return n + (s[(v-20)%10] || s[v] || s[0]);
-  }
-
+  function ordinal(n) { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
   const opener = pick(OPENERS);
-
   let deathLine;
   if (dead.length === 0)      deathLine = pick(DEATH_LINES[0]);
   else if (dead.length === 1) deathLine = pick(DEATH_LINES[1]);
   else                        deathLine = pick(MANY_DEAD);
-
   let survivorLine;
   if (survivors.length === 0)      survivorLine = 'None walk away. The Harvest has consumed them all.';
   else if (survivors.length === 1) survivorLine = pick(SURVIVOR_LINES.one);
   else if (survivors.length <= 3)  survivorLine = pick(SURVIVOR_LINES.few);
   else                             survivorLine = pick(SURVIVOR_LINES.many);
-
-  // Sentence 1: opener + death context. Sentence 2: survivor context.
   return `${opener} ${deathLine} ${survivorLine}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CORE ROUND
+// CORE ROUND — Sudden Death: flat 15% from Day 1, no survival pardon
 // ═══════════════════════════════════════════════════════════════════════════
 async function runRound() {
   state.round++;
   const MIN_ANIM_MS = 3000;
   const animStart   = Date.now();
 
-  const alive   = state.tributes.filter(t => t.alive);
-  const isFirst = state.round === 1;
+  const alive = state.tributes.filter(t => t.alive);
 
-  // ── 1. Deaths (only after day 2) ───────────────────────────────────────────
+  // ── 1. Deaths — 15% flat rate from Day 1, no grace period ─────────────────
   const diedThisRound = [];
-  const deathsAllowed = state.round > 2;
+  const assignDeath = t => {
+    t.alive = false;
+    t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name);
+    diedThisRound.push(t);
+  };
 
-  if (deathsAllowed) {
-    const killRate = alive.length <= 3 ? 0.25 : 0.12;
-    const assignDeath = t => { t.alive = false; t._death = fill(pickUnique(window.EVENT_POOLS.deaths, state.usedD), t.name); diedThisRound.push(t); };
-    if (isFirst) {
-      const n = Math.max(1, Math.floor(Math.random() * (Math.min(3, alive.length-1) + 1)));
-      shuffle(alive).slice(0, n).forEach(assignDeath);
-    } else {
-      let aliveCount = alive.length;
-      for (const t of shuffle(alive)) {
-        if (aliveCount <= 1) break;
-        if (Math.random() < killRate) { assignDeath(t); aliveCount--; }
-      }
-    }
+  let aliveCount = alive.length;
+  for (const t of shuffle(alive)) {
+    if (aliveCount <= 1) break;
+    if (Math.random() < 0.15) { assignDeath(t); aliveCount--; }
   }
 
   // ── 2. Events ─────────────────────────────────────────────────────────────
   const deadIds = new Set(diedThisRound.map(d => d.id));
   const events = alive.map(t => {
-    if (deadIds.has(t.id))      return { warrior:t, type:'death',       text: t._death };
-    if (Math.random() < 0.6)   return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      state.usedA), t.name) };
-    return                             { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, state.usedC), t.name) };
+    if (deadIds.has(t.id))     return { warrior:t, type:'death',       text: t._death };
+    if (Math.random() < 0.6)  return { warrior:t, type:'action',       text: fill(pickUnique(window.EVENT_POOLS.actions,      state.usedA), t.name) };
+    return                            { warrior:t, type:'consequence', text: fill(pickUnique(window.EVENT_POOLS.consequences, state.usedC), t.name) };
   });
 
-  // ── 3. Build block (hidden until overlay fades) ───────────────────────────
+  // ── 3. Build block ────────────────────────────────────────────────────────
   const deathNames   = diedThisRound.map(t => t.name);
   const deathsBanner = deathNames.length ? `<div class="deaths-banner">☠ Fallen: ${deathNames.join(', ')}</div>` : '';
   const eventsHTML   = events.map(ev => {
@@ -963,7 +868,6 @@ async function runRound() {
     </div>`;
   }).join('');
 
-  // Collapse all previous round blocks before adding the new one
   document.querySelectorAll('#story-log .round-block').forEach(b => b.classList.add('collapsed'));
 
   const block         = document.createElement('div');
@@ -971,7 +875,7 @@ async function runRound() {
   block.style.opacity = '0';
   block.dataset.round = String(state.round);
   block.innerHTML     = `
-    <div class="round-header" onclick="toggleRoundBlock(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRoundBlock(this);}" role="button" tabindex="0" aria-expanded="true">
+    <div class="round-header" onclick="toggleRoundBlock(this)" role="button" tabindex="0" aria-expanded="true">
       <span class="collapse-icon">▼</span>
       Day ${state.round}
     </div>
@@ -989,26 +893,21 @@ async function runRound() {
   updateTracker();
 
   const survivors = state.tributes.filter(t => t.alive);
-  const survivalDayThreshold = Math.ceil((state.tributes.length / 4) * 10);
-  const survivedToThreshold = state.round >= survivalDayThreshold && survivors.length >= 2;
-  const gameOver            = survivors.length <= 1 || survivedToThreshold;
+  // No survival pardon — only last standing or all fallen
+  const gameOver = survivors.length <= 1;
 
-  // ── 4. Fetch summary (runs during animation) ──────────────────────────────
+  // ── 4. Summary ────────────────────────────────────────────────────────────
   const summaryText = buildFallbackSummary(state.round, events, diedThisRound, survivors, state.arena);
-
   state.history.push(`Day ${state.round}: ${summaryText}`);
 
-  // ── 5. Wait for min animation, then reveal ────────────────────────────────
+  // ── 5. Animate ────────────────────────────────────────────────────────────
   const elapsed = Date.now() - animStart;
   if (elapsed < MIN_ANIM_MS) await new Promise(r => setTimeout(r, MIN_ANIM_MS - elapsed));
 
-  // Fill in summary text
   const el = document.getElementById(`summary-${state.round}`);
   if (el) el.innerHTML = summaryText;
 
-  // Dismiss overlay, then fade block in
   await hideBattleOverlay();
-
   block.scrollIntoView({ behavior: 'smooth', block: 'start' });
   void block.offsetWidth;
   block.style.transition = 'opacity 0.55s ease';
@@ -1016,37 +915,28 @@ async function runRound() {
 
   // ── 6. Continue or end ────────────────────────────────────────────────────
   if (gameOver) {
-    const outcome = survivedToThreshold ? survivors : (survivors[0] || null);
-    await showOutcome(outcome, survivedToThreshold, survivalDayThreshold);
+    await showOutcome(survivors[0] || null);
   } else {
     setStatus('next', `${survivors.length} warrior${survivors.length !== 1 ? 's' : ''} remain`);
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// WIN TRACKING
+// WIN TRACKING — separate storage key for Sudden Death
 // ═══════════════════════════════════════════════════════════════════════════
-const WIN_STORAGE_KEY = 'iron-harvest-wins';
+const WIN_STORAGE_KEY = 'iron-harvest-sd-wins';
 
 function loadWinRecord() {
-  try {
-    const raw = localStorage.getItem(WIN_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
+  try { const raw = localStorage.getItem(WIN_STORAGE_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch (e) { return {}; }
 }
 
 function saveWinRecord(record) {
-  try {
-    localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record));
-  } catch (e) { /* silent fail */ }
+  try { localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record)); } catch (e) {}
 }
 
 function recordWins(victors, defaultNames) {
   const customVictors = victors.filter(v => !defaultNames.includes(v.name));
-
-  // Record deaths for all custom-named fallen warriors
   const fallen = state.tributes.filter(t => !t.alive && !defaultNames.includes(t.name));
   const record = loadWinRecord();
 
@@ -1075,64 +965,40 @@ function recordWins(victors, defaultNames) {
   return record;
 }
 
-function downloadWinsJSON(record) {
-  const sorted = Object.fromEntries(
-    Object.entries(record).sort((a, b) => b[1].wins - a[1].wins)
-  );
-  const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'iron-harvest-wins.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // OUTCOME
 // ═══════════════════════════════════════════════════════════════════════════
-async function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
+async function showOutcome(victor) {
   setStatus('');
   const screen = document.createElement('div');
   screen.className = 'outcome-screen';
+
   if (victor) {
-    const victors   = Array.isArray(victor) ? victor : [victor];
-    const namesEl   = victors.map(v => `${v.name}, ${v.cls} of ${v.keep}`).join('<br>');
-    const summaryText = isSurvivalVictory
-      ? `Survived the Iron Harvest to Day ${survivalDayThreshold} and earned the lord's pardon. The warriors have prevailed.`
-      : `Stands alone as the Champion of the ${state.tributes.length}-warrior Iron Harvest after ${state.round} brutal days. The lord's hall erupts in acclaim.`;
-
-    // Record wins for custom-named warriors only
-    const record = recordWins(victors, DEFAULT_NAMES);
-
-    // Build view ledger link if any custom winners recorded
-    const customVictors = victors.filter(v => !DEFAULT_NAMES.includes(v.name));
-    const ledgerBtn = record && customVictors.length > 0
-      ? `<button class="btn-download-wins" style="max-width:280px;margin:0 auto 20px;display:block;" onclick="window.location.href='ledger.html'">📜 View Chronicle of Victories</button>`
+    const summaryText = `Stands alone as the last survivor of the Sudden Death Harvest after ${state.round} brutal days. No pardon was offered — only survival.`;
+    const record = recordWins([victor], DEFAULT_NAMES);
+    const isCustom = !DEFAULT_NAMES.includes(victor.name);
+    const ledgerBtn = record && isCustom
+      ? `<button class="btn-download-wins" onclick="window.location.href='sudden-death-ledger.html'">📜 View SD Chronicle</button>`
       : '';
-
     screen.innerHTML = `
-      <div class="outcome-title victory">⚜ Champion${victors.length > 1 ? 's' : ''} ⚜</div>
-      <div class="champion-name">${namesEl}</div>
+      <div class="outcome-title victory">⚜ Champion ⚜</div>
+      <div class="champion-name">${victor.name}, ${victor.cls} of ${victor.keep}</div>
       <div class="outcome-text">${summaryText}</div>
       ${ledgerBtn}
-      <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
+      <button class="btn-restart" onclick="location.reload()">Sound the Death Knell Again</button>`;
   } else {
-    // Still record deaths even when all fall
     recordWins([], DEFAULT_NAMES);
     screen.innerHTML = `
       <div class="outcome-title" style="color:var(--gold-dim);">✦ All Fallen ✦</div>
       <div class="outcome-text">
-        Every warrior has perished. The Iron Harvest claims all —
+        Every warrior has perished. The Sudden Death Harvest claims all —
         a dark omen the lord has never witnessed before. There is no Champion.
       </div>
-      <button class="btn-restart" onclick="location.reload()">Sound the Horn Again</button>`;
+      <button class="btn-restart" onclick="location.reload()">Sound the Death Knell Again</button>`;
   }
   document.getElementById('story-log').appendChild(screen);
   screen.scrollIntoView({ behavior: 'smooth' });
 }
-
-
 </script>
 </body>
 </html>
