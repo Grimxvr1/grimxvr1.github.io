@@ -526,9 +526,9 @@
     </div>
     <div class="gm-body">
       <div class="gm-panel-actions">
-        <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
-        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death.html'">☠ Sudden Death</button>
         <button class="btn-gm-ledger" onclick="window.location.href='guide.html'">📖 Guide</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death.html'">☠ Sudden Death</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='ledger.html'">📜 View Ledger</button>
         <button class="btn-logout" onclick="logout()">⇥ Logout</button>
       </div>
     </div>
@@ -543,7 +543,7 @@
     <div class="gm-body">
       <div class="gm-warrior-list" id="gm-warrior-list"></div>
       <div class="gm-panel-actions">
-        <button class="btn-start-over" id="btn-start-over" onclick="location.reload()" style="display:none;">↺ Start Over</button>
+        <button class="btn-start-over" id="btn-start-over" onclick="clearGameState(); location.reload()" style="display:none;">↺ Start Over</button>
       </div>
     </div>
   </div>
@@ -636,7 +636,62 @@ window.onEventsReady = function(pools) {
     btn.disabled = false;
     btn.textContent = 'Sound the Horn';
   }
+  // Attempt to restore a saved game
+  restoreGame();
 };
+
+function restoreGame() {
+  const saved = loadGameState();
+  if (!saved || !saved.tributes || saved.round < 1) return;
+
+  // Restore state
+  state = saved;
+
+  // Hide setup, show game
+  document.getElementById('setup-panel').style.display = 'none';
+  document.getElementById('game-area').style.display   = 'block';
+  updateTracker();
+
+  // Rebuild chronicle from history
+  const log = document.getElementById('story-log');
+  log.innerHTML = '';
+
+  saved.history.forEach((entry, idx) => {
+    const dayNum = idx + 1;
+    const block = document.createElement('div');
+    block.className = 'round-block collapsed';
+    block.dataset.round = String(dayNum);
+    block.innerHTML = `
+      <div class="round-header" onclick="toggleRoundBlock(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRoundBlock(this);}" role="button" tabindex="0" aria-expanded="false">
+        <span class="collapse-icon">▼</span>
+        Day ${dayNum}
+      </div>
+      <div class="round-body">
+        <div class="round-body-inner">
+          <div class="round-summary">
+            <div class="summary-label">Day Summary</div>
+            <div class="summary-text">${entry.replace(/^Day \d+: /, '')}</div>
+          </div>
+        </div>
+      </div>`;
+    log.appendChild(block);
+  });
+
+  // Check if game was already over (1 or 0 survivors and history present)
+  const survivors = state.tributes.filter(t => t.alive);
+  const survivalDayThreshold = Math.ceil((state.tributes.length / 4) * 10);
+  const survivedToThreshold  = state.round >= survivalDayThreshold && survivors.length >= 2;
+  const gameOver = survivors.length <= 1 || survivedToThreshold;
+
+  if (gameOver) {
+    // Game was finished — show outcome again
+    const outcome = survivedToThreshold ? survivors : (survivors[0] || null);
+    showOutcome(outcome, survivedToThreshold, survivalDayThreshold);
+  } else {
+    // Game is mid-run — show next day button
+    setStatus('next', `${survivors.length} warrior${survivors.length !== 1 ? 's' : ''} remain — chronicle restored to Day ${state.round}`);
+  }
+}
 </script>
 <script src="events.js"></script>
 <script>
@@ -771,14 +826,16 @@ function toggleGameMasterPanel() {
 }
 
 function updateGameMasterPanel() {
-  const panel = document.getElementById('game-master-panel');
-  const list  = document.getElementById('gm-warrior-list');
+  const panel    = document.getElementById('game-master-panel');
+  const navPanel = document.getElementById('nav-panel');
+  const list     = document.getElementById('gm-warrior-list');
   const startOverBtn = document.getElementById('btn-start-over');
   if (!panel || !list) return;
 
   if (state.tributes && state.round >= 1) {
-    // In-game: show panel, warrior list, and start over
-    panel.style.display = '';
+    // In-game: show GM panel, hide nav panel
+    panel.style.display    = '';
+    if (navPanel) navPanel.style.display = 'none';
     list.innerHTML = state.tributes.map(t => `
       <div class="gm-warrior-row ${t.alive ? '' : 'dead'}">
         <span class="gm-warrior-name">${t.name}</span>
@@ -786,8 +843,9 @@ function updateGameMasterPanel() {
       </div>`).join('');
     if (startOverBtn) startOverBtn.style.display = '';
   } else {
-    // Setup: hide entire panel
-    panel.style.display = 'none';
+    // Setup: hide GM panel, show nav panel
+    panel.style.display    = 'none';
+    if (navPanel) navPanel.style.display = '';
     list.innerHTML = '';
     if (startOverBtn) startOverBtn.style.display = 'none';
   }
@@ -987,6 +1045,7 @@ async function runRound() {
     </div>`;
   document.getElementById('story-log').appendChild(block);
   updateTracker();
+  saveGameState();
 
   const survivors = state.tributes.filter(t => t.alive);
   const survivalDayThreshold = Math.ceil((state.tributes.length / 4) * 10);
@@ -1026,7 +1085,8 @@ async function runRound() {
 // ═══════════════════════════════════════════════════════════════════════════
 // WIN TRACKING
 // ═══════════════════════════════════════════════════════════════════════════
-const WIN_STORAGE_KEY = 'iron-harvest-wins';
+const WIN_STORAGE_KEY   = 'iron-harvest-wins';
+const STATE_STORAGE_KEY = 'iron-harvest-state';
 
 function loadWinRecord() {
   try {
@@ -1041,6 +1101,34 @@ function saveWinRecord(record) {
   try {
     localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record));
   } catch (e) { /* silent fail */ }
+}
+
+function saveGameState() {
+  try {
+    const serialisable = {
+      ...state,
+      usedA: [...state.usedA],
+      usedC: [...state.usedC],
+      usedD: [...state.usedD],
+    };
+    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(serialisable));
+  } catch(e) { /* silent */ }
+}
+
+function clearGameState() {
+  sessionStorage.removeItem(STATE_STORAGE_KEY);
+}
+
+function loadGameState() {
+  try {
+    const raw = sessionStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    parsed.usedA = new Set(parsed.usedA || []);
+    parsed.usedC = new Set(parsed.usedC || []);
+    parsed.usedD = new Set(parsed.usedD || []);
+    return parsed;
+  } catch(e) { return null; }
 }
 
 function recordWins(victors, defaultNames) {
@@ -1092,6 +1180,7 @@ function downloadWinsJSON(record) {
 // OUTCOME
 // ═══════════════════════════════════════════════════════════════════════════
 async function showOutcome(victor, isSurvivalVictory, survivalDayThreshold) {
+  clearGameState();
   setStatus('');
   const screen = document.createElement('div');
   screen.className = 'outcome-screen';

@@ -477,9 +477,9 @@
     </div>
     <div class="gm-body">
       <div class="gm-panel-actions">
-        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death-ledger.html'">📜 SD Ledger</button>
-        <button class="btn-gm-ledger" onclick="window.location.href='index.html'">⚔ Standard Game</button>
         <button class="btn-gm-ledger" onclick="window.location.href='guide.html'">📖 Guide</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='index.html'">⚔ Standard Game</button>
+        <button class="btn-gm-ledger" onclick="window.location.href='sudden-death-ledger.html'">📜 SD Ledger</button>
         <button class="btn-logout" onclick="logout()">⇥ Logout</button>
       </div>
     </div>
@@ -494,7 +494,7 @@
     <div class="gm-body">
       <div class="gm-warrior-list" id="gm-warrior-list"></div>
       <div class="gm-panel-actions">
-        <button class="btn-start-over" id="btn-start-over" onclick="location.reload()" style="display:none;">↺ Start Over</button>
+        <button class="btn-start-over" id="btn-start-over" onclick="clearGameState(); location.reload()" style="display:none;">↺ Start Over</button>
       </div>
     </div>
   </div>
@@ -572,7 +572,51 @@ window.onEventsReady = function(pools) {
   window.EVENT_POOLS = pools;
   const btn = document.getElementById('btn-enter');
   if (btn) { btn.disabled = false; btn.textContent = '☠ Sound the Death Knell'; }
+  restoreGame();
 };
+
+function restoreGame() {
+  const saved = loadGameState();
+  if (!saved || !saved.tributes || saved.round < 1) return;
+
+  state = saved;
+  document.getElementById('setup-panel').style.display = 'none';
+  document.getElementById('game-area').style.display   = 'block';
+  updateTracker();
+
+  const log = document.getElementById('story-log');
+  log.innerHTML = '';
+
+  saved.history.forEach((entry, idx) => {
+    const dayNum = idx + 1;
+    const block = document.createElement('div');
+    block.className = 'round-block collapsed';
+    block.dataset.round = String(dayNum);
+    block.innerHTML = `
+      <div class="round-header" onclick="toggleRoundBlock(this)" role="button" tabindex="0" aria-expanded="false">
+        <span class="collapse-icon">▼</span>
+        Day ${dayNum}
+      </div>
+      <div class="round-body">
+        <div class="round-body-inner">
+          <div class="round-summary">
+            <div class="summary-label">Day Summary</div>
+            <div class="summary-text">${entry.replace(/^Day \d+: /, '')}</div>
+          </div>
+        </div>
+      </div>`;
+    log.appendChild(block);
+  });
+
+  const survivors = state.tributes.filter(t => t.alive);
+  const gameOver  = survivors.length <= 1;
+
+  if (gameOver) {
+    showOutcome(survivors[0] || null);
+  } else {
+    setStatus('next', `${survivors.length} warrior${survivors.length !== 1 ? 's' : ''} remain — chronicle restored to Day ${state.round}`);
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // OVERLAY
@@ -711,12 +755,14 @@ function toggleGameMasterPanel() {
 }
 
 function updateGameMasterPanel() {
-  const panel = document.getElementById('game-master-panel');
-  const list  = document.getElementById('gm-warrior-list');
+  const panel    = document.getElementById('game-master-panel');
+  const navPanel = document.getElementById('nav-panel');
+  const list     = document.getElementById('gm-warrior-list');
   const startOverBtn = document.getElementById('btn-start-over');
   if (!panel || !list) return;
   if (state.tributes && state.round >= 1) {
     panel.style.display = '';
+    if (navPanel) navPanel.style.display = 'none';
     list.innerHTML = state.tributes.map(t => `
       <div class="gm-warrior-row ${t.alive ? '' : 'dead'}">
         <span class="gm-warrior-name">${t.name}</span>
@@ -725,6 +771,7 @@ function updateGameMasterPanel() {
     if (startOverBtn) startOverBtn.style.display = '';
   } else {
     panel.style.display = 'none';
+    if (navPanel) navPanel.style.display = '';
     list.innerHTML = '';
     if (startOverBtn) startOverBtn.style.display = 'none';
   }
@@ -891,6 +938,7 @@ async function runRound() {
     </div>`;
   document.getElementById('story-log').appendChild(block);
   updateTracker();
+  saveGameState();
 
   const survivors = state.tributes.filter(t => t.alive);
   // No survival pardon — only last standing or all fallen
@@ -924,7 +972,8 @@ async function runRound() {
 // ═══════════════════════════════════════════════════════════════════════════
 // WIN TRACKING — separate storage key for Sudden Death
 // ═══════════════════════════════════════════════════════════════════════════
-const WIN_STORAGE_KEY = 'iron-harvest-sd-wins';
+const WIN_STORAGE_KEY   = 'iron-harvest-sd-wins';
+const STATE_STORAGE_KEY = 'iron-harvest-sd-state';
 
 function loadWinRecord() {
   try { const raw = localStorage.getItem(WIN_STORAGE_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -933,6 +982,27 @@ function loadWinRecord() {
 
 function saveWinRecord(record) {
   try { localStorage.setItem(WIN_STORAGE_KEY, JSON.stringify(record)); } catch (e) {}
+}
+
+function saveGameState() {
+  try {
+    const serialisable = { ...state, usedA: [...state.usedA], usedC: [...state.usedC], usedD: [...state.usedD] };
+    sessionStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(serialisable));
+  } catch(e) {}
+}
+
+function clearGameState() { sessionStorage.removeItem(STATE_STORAGE_KEY); }
+
+function loadGameState() {
+  try {
+    const raw = sessionStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    parsed.usedA = new Set(parsed.usedA || []);
+    parsed.usedC = new Set(parsed.usedC || []);
+    parsed.usedD = new Set(parsed.usedD || []);
+    return parsed;
+  } catch(e) { return null; }
 }
 
 function recordWins(victors, defaultNames) {
@@ -969,6 +1039,7 @@ function recordWins(victors, defaultNames) {
 // OUTCOME
 // ═══════════════════════════════════════════════════════════════════════════
 async function showOutcome(victor) {
+  clearGameState();
   setStatus('');
   const screen = document.createElement('div');
   screen.className = 'outcome-screen';
