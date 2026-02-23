@@ -489,14 +489,126 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   scrollbar-color: var(--bg3) transparent;
 }
 
-/* ── BATTLE FOOTER ──────────────────────────────────────────────────────────── */
+/* ── ACTION PICKER ──────────────────────────────────────────────────────────── */
 .battle-footer {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-top: none;
-  padding: 0.9rem 1.2rem;
+  padding: 1rem 1.2rem;
+}
+
+.action-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.action-btn {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  color: var(--text);
+}
+.action-btn:hover {
+  border-color: var(--gold-dim);
+  background: rgba(201,168,76,0.06);
+  box-shadow: 0 0 12px rgba(201,168,76,0.15);
+}
+.action-btn.selected {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.1);
+  box-shadow: 0 0 18px rgba(201,168,76,0.25);
+}
+.action-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Hit = red accent, Block = blue accent, Dodge = green accent */
+.action-btn.hit:hover,   .action-btn.hit.selected   { border-color: var(--blood2); box-shadow: 0 0 16px rgba(204,34,34,0.3); }
+.action-btn.block:hover, .action-btn.block.selected  { border-color: var(--blue2);  box-shadow: 0 0 16px rgba(45,107,191,0.3); }
+.action-btn.dodge:hover, .action-btn.dodge.selected  { border-color: #4a9a6a;       box-shadow: 0 0 16px rgba(74,154,106,0.3); }
+
+.action-emoji { font-size: 1.8rem; margin-bottom: 0.3rem; }
+.action-name  { font-family: 'Cinzel', serif; font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.2rem; }
+.action-desc  { font-size: 0.68rem; color: var(--text-dim); font-style: italic; margin-bottom: 0.3rem; }
+.action-beats { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--copper); }
+
+/* ── REVEAL COUNTDOWN ───────────────────────────────────────────────────────── */
+.reveal-choices {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0;
+}
+
+.reveal-choice {
   text-align: center;
 }
+
+.reveal-emoji {
+  font-size: 2.2rem;
+  margin-bottom: 0.25rem;
+  animation: revealPop 0.4s ease;
+}
+@keyframes revealPop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.reveal-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.reveal-name {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 0.15rem;
+}
+
+.reveal-vs {
+  text-align: center;
+}
+
+.reveal-countdown {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2rem;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,168,76,0.6);
+  animation: countPulse 0.7s ease infinite alternate;
+  min-width: 2rem;
+  display: inline-block;
+}
+@keyframes countPulse {
+  from { transform: scale(0.9); opacity: 0.7; }
+  to   { transform: scale(1.1); opacity: 1; }
+}
+
+/* ── NEW LOG TAGS ────────────────────────────────────────────────────────────── */
+.tag-dodge  { color: #80c8a0; border-color: #306050; background: rgba(30,80,60,0.25); }
+.tag-reveal { color: #c8b080; border-color: #6a5020; background: rgba(80,60,20,0.2); }
+
+/* ── BATTLE FOOTER (override old rule) ──────────────────────────────────────── */
 
 /* ── RESULTS ────────────────────────────────────────────────────────────────── */
 .results-panel {
