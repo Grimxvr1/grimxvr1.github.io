@@ -710,6 +710,150 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 .text-muted  { color: var(--text-dim); font-style: italic; font-size: 0.82rem; }
 .text-gold   { color: var(--gold); font-family: 'Cinzel', serif; }
 
+/* ── AUTH BAR ───────────────────────────────────────────────────────────────── */
+.auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  margin-bottom: 0.6rem;
+  min-height: 2rem;
+}
+
+.auth-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.auth-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1px;
+  border: 1px solid;
+}
+.auth-badge.linked {
+  color: #80c880;
+  border-color: #306030;
+  background: rgba(30,80,30,0.25);
+}
+
+.auth-link-btn {
+  font-size: 0.62rem !important;
+  padding: 0.25rem 0.8rem !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* ── LEADERBOARD ────────────────────────────────────────────────────────────── */
+.lb-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--row-line);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-row.lb-me { background: rgba(201,168,76,0.06); }
+
+.lb-rank {
+  font-size: 1rem;
+  text-align: center;
+}
+.lb-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.lb-linked {
+  font-family: 'Cinzel', serif;
+  font-size: 0.52rem;
+  color: #80c880;
+  border: 1px solid #306030;
+  background: rgba(30,80,30,0.25);
+  padding: 0.1rem 0.3rem;
+  border-radius: 1px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.lb-wins {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  color: var(--copper);
+  white-space: nowrap;
+}
+.lb-gold {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  color: var(--gold);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: right;
+}
+.lb-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ── GOLD EARNED BANNER ─────────────────────────────────────────────────────── */
+.gold-earned-banner {
+  text-align: center;
+  padding: 0.7rem 1rem;
+  background: rgba(201,168,76,0.08);
+  border: 1px solid var(--gold-dim);
+  border-radius: 2px;
+  margin: 0.8rem 0;
+  font-family: 'IM Fell English', serif;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+.gold-outcome {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-right: 0.4rem;
+}
+.gold-amount {
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 0.88rem;
+}
+
+/* ── TOAST ──────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: 'IM Fell English', serif;
+  font-size: 0.88rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast-error { border-color: var(--blood2); color: #ffaaaa; }
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .armor-grid  { grid-template-columns: 1fr; }
@@ -718,4 +862,6 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   .join-row { grid-template-columns: 1fr; }
   .log-row  { grid-template-columns: 90px 1fr 70px; }
   .log-who  { padding: 0.6rem; }
+  .lb-row   { grid-template-columns: 36px 1fr auto; }
+  .lb-gold  { display: none; }
 }
