@@ -193,12 +193,31 @@
     function buildLogRow(entry) {
       const row = document.createElement("div");
 
-      if (entry.type==="event" || entry.type==="env") {
-        row.className = `log-row full-width ${entry.type==="event"?"log-event":"log-env"}`;
-        row.innerHTML = `<div class="log-text">${entry.text}</div>`;
+      // Event / env rows: italic full-width text, no who/tag columns
+      if (entry.type==="event") {
+        row.className = "log-row log-event";
+        row.innerHTML = `
+          <div class="log-who">
+            <span class="who-name">Arena</span>
+            <span class="who-sub">Round Event</span>
+          </div>
+          <div class="log-text">${entry.text}</div>
+          <div class="log-tag-cell"><span class="log-tag tag-event">Event</span></div>`;
+        return row;
+      }
+      if (entry.type==="env") {
+        row.className = "log-row log-env";
+        row.innerHTML = `
+          <div class="log-who">
+            <span class="who-name">Arena</span>
+            <span class="who-sub">Effect</span>
+          </div>
+          <div class="log-text">${entry.text}</div>
+          <div class="log-tag-cell"><span class="log-tag tag-env">Effect</span></div>`;
         return row;
       }
 
+      // Standard 3-column row: who | text | tag
       const attacker = entry.attacker;
       const [tagText, tagClass] = tagFor(entry.type);
       const weaponName = attacker ? WEAPONS[attacker.weapon].name : "";
@@ -208,10 +227,13 @@
       row.innerHTML = `
         <div class="log-who">
           <span class="who-name">${attacker ? attacker.name : "Arena"}</span>
-          <span class="who-sub">${weaponName}${armorName ? " · "+armorName:""}</span>
-          <span class="log-tag ${tagClass}">${tagText}</span>
+          <span class="who-sub">${weaponName}</span>
+          <span class="who-sub">${armorName}</span>
         </div>
-        <div class="log-text">${entry.text}</div>`;
+        <div class="log-text">${entry.text}</div>
+        <div class="log-tag-cell">
+          <span class="log-tag ${tagClass}">${tagText}</span>
+        </div>`;
       return row;
     }
 

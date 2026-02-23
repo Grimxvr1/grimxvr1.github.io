@@ -307,9 +307,10 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   background: var(--panel);
 }
 
+/* Three columns: who | narrative text | tag badge */
 .log-row {
   display: grid;
-  grid-template-columns: 130px 1fr;
+  grid-template-columns: 130px 1fr 90px;
   border-bottom: 1px solid var(--row-line);
   animation: rowIn 0.3s ease;
 }
@@ -320,7 +321,7 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Left column */
+/* Col 1 — fighter identity */
 .log-who {
   padding: 0.75rem 0.8rem 0.75rem 0.9rem;
   border-right: 1px solid var(--row-line);
@@ -349,18 +350,35 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   line-height: 1.2;
 }
 
-/* Badge tag */
+/* Col 2 — narrative text */
+.log-text {
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text);
+  border-right: 1px solid var(--row-line);
+}
+
+/* Col 3 — badge tag */
+.log-tag-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.6rem;
+  background: rgba(0,0,0,0.12);
+}
+
 .log-tag {
   display: inline-block;
   font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
+  font-size: 0.52rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 0.15rem 0.45rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 1px;
   border: 1px solid;
-  margin-top: 0.3rem;
-  width: fit-content;
+  text-align: center;
+  width: 100%;
 }
 
 .tag-hit      { color: #e08080; border-color: #8b3030; background: rgba(139,0,0,0.2); }
@@ -372,23 +390,9 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 .tag-heal     { color: #80c880; border-color: #306030; background: rgba(30,80,30,0.25); }
 .tag-heavy    { color: #b0a090; border-color: #504030; background: rgba(50,40,30,0.3); }
 
-/* Right column */
-.log-text {
-  padding: 0.75rem 1rem 0.75rem 1rem;
-  font-size: 0.92rem;
-  line-height: 1.65;
-  color: var(--text);
-}
-
-/* Special rows — no left column (events, env) */
-.log-row.full-width .log-who { display: none; }
-.log-row.full-width { grid-template-columns: 1fr; }
-.log-row.full-width .log-text {
-  font-style: italic;
-  color: var(--text-dim);
-  padding-left: 1.4rem;
-  border-left: 3px solid var(--gold-dim);
-}
+/* Event / arena rows — same 3 columns, italic text, gold left border on text cell */
+.log-row.log-event .log-text { font-style: italic; color: var(--gold);     border-left: 3px solid var(--gold); }
+.log-row.log-env   .log-text { font-style: italic; color: var(--text-dim); border-left: 3px solid var(--gold-dim); }
 .log-row.log-event .log-text { color: var(--gold); border-left-color: var(--gold); }
 
 /* ── SCROLL CONTAINER ───────────────────────────────────────────────────────── */
@@ -514,6 +518,6 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   .weapon-grid { grid-template-columns: repeat(2, 1fr); }
   .battle-header { grid-template-columns: 1fr; gap: 0.8rem; }
   .join-row { grid-template-columns: 1fr; }
-  .log-row  { grid-template-columns: 100px 1fr; }
+  .log-row  { grid-template-columns: 90px 1fr 70px; }
   .log-who  { padding: 0.6rem; }
 }
