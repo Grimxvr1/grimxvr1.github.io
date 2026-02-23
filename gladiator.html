@@ -108,6 +108,9 @@
       if (effect==="dagger")  logs.push({ type:"env", text:`${daggerLucky==="p1"?p1.name:p2.name} snatches the hidden dagger — bonus damage this round.` });
       if (effect==="execute") logs.push({ type:"env", text:`${executeLucky==="p1"?p1.name:p2.name} hears the crowd's hunger and readies a savage blow.` });
 
+      // helper to make a flat log entry (Firebase-safe — no nested objects)
+      const entry = (type, who, weapon, armor, text) => ({ type, who, weapon, armor, text });
+
       // P1 attacks
       const p1Armor  = ARMORS[p1.armor];
       const p1Swings = p1Armor.attackEvery===1 || state.round%p1Armor.attackEvery===0;
@@ -115,20 +118,20 @@
         for (let i=0;i<p1Armor.attackTimes;i++) {
           const r = calcDamage(p1,p2,effect);
           if (r.blocked) {
-            logs.push({ type:"block", attacker:p1, defender:p2,
-              text:`${p2.name} raises their shield — the blow glances off harmlessly.` });
+            logs.push(entry("block", p1.name, WEAPONS[p1.weapon].name, ARMORS[p1.armor].name,
+              `${p2.name} raises their shield — the blow glances off harmlessly.`));
           } else {
             let total = r.dmg;
             if (effect==="dagger"  && daggerLucky==="p1") total += Math.floor(event.bonus/p1Armor.attackTimes);
             if (effect==="execute" && executeLucky==="p1") total += Math.floor(event.bonus/p1Armor.attackTimes);
             p2.hp -= total;
-            logs.push({ type:r.crit?"crit":"hit", attacker:p1, defender:p2, dmg:total,
-              text:`${p1.name} ${WEAPONS[p1.weapon].flavor} ${p2.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}` });
+            logs.push(entry(r.crit?"crit":"hit", p1.name, WEAPONS[p1.weapon].name, ARMORS[p1.armor].name,
+              `${p1.name} ${WEAPONS[p1.weapon].flavor} ${p2.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}`));
           }
         }
       } else {
-        logs.push({ type:"heavy", attacker:p1,
-          text:`${p1.name} braces in heavy plate — too encumbered to swing this round.` });
+        logs.push(entry("heavy", p1.name, WEAPONS[p1.weapon].name, ARMORS[p1.armor].name,
+          `${p1.name} braces in heavy plate — too encumbered to swing this round.`));
       }
 
       // P2 attacks
@@ -138,20 +141,20 @@
         for (let i=0;i<p2Armor.attackTimes;i++) {
           const r = calcDamage(p2,p1,effect);
           if (r.blocked) {
-            logs.push({ type:"block", attacker:p2, defender:p1,
-              text:`${p1.name} raises their shield — the blow glances off harmlessly.` });
+            logs.push(entry("block", p2.name, WEAPONS[p2.weapon].name, ARMORS[p2.armor].name,
+              `${p1.name} raises their shield — the blow glances off harmlessly.`));
           } else {
             let total = r.dmg;
             if (effect==="dagger"  && daggerLucky==="p2") total += Math.floor(event.bonus/p2Armor.attackTimes);
             if (effect==="execute" && executeLucky==="p2") total += Math.floor(event.bonus/p2Armor.attackTimes);
             p1.hp -= total;
-            logs.push({ type:r.crit?"crit":"hit", attacker:p2, defender:p1, dmg:total,
-              text:`${p2.name} ${WEAPONS[p2.weapon].flavor} ${p1.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}` });
+            logs.push(entry(r.crit?"crit":"hit", p2.name, WEAPONS[p2.weapon].name, ARMORS[p2.armor].name,
+              `${p2.name} ${WEAPONS[p2.weapon].flavor} ${p1.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}`));
           }
         }
       } else {
-        logs.push({ type:"heavy", attacker:p2,
-          text:`${p2.name} braces in heavy plate — too encumbered to swing this round.` });
+        logs.push(entry("heavy", p2.name, WEAPONS[p2.weapon].name, ARMORS[p2.armor].name,
+          `${p2.name} braces in heavy plate — too encumbered to swing this round.`));
       }
 
       p1.hp = Math.max(0, Math.min(p1.hp, ARMORS[p1.armor].hp));
@@ -193,7 +196,6 @@
     function buildLogRow(entry) {
       const row = document.createElement("div");
 
-      // Event / env rows: italic full-width text, no who/tag columns
       if (entry.type==="event") {
         row.className = "log-row log-event";
         row.innerHTML = `
@@ -218,17 +220,13 @@
       }
 
       // Standard 3-column row: who | text | tag
-      const attacker = entry.attacker;
       const [tagText, tagClass] = tagFor(entry.type);
-      const weaponName = attacker ? WEAPONS[attacker.weapon].name : "";
-      const armorName  = attacker ? ARMORS[attacker.armor].name   : "";
-
       row.className = "log-row";
       row.innerHTML = `
         <div class="log-who">
-          <span class="who-name">${attacker ? attacker.name : "Arena"}</span>
-          <span class="who-sub">${weaponName}</span>
-          <span class="who-sub">${armorName}</span>
+          <span class="who-name">${entry.who || "—"}</span>
+          <span class="who-sub">${entry.weapon || ""}</span>
+          <span class="who-sub">${entry.armor || ""}</span>
         </div>
         <div class="log-text">${entry.text}</div>
         <div class="log-tag-cell">
