@@ -324,6 +324,38 @@
       },700);
     }
 
+    /* ── SESSION PERSISTENCE ──────────────────────────────────────────────── */
+    const SESSION_KEY = "gladiator_session";
+
+    function saveSession(code, role) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({code, role}));
+    }
+
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    function loadSession() {
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+      catch { return null; }
+    }
+
+    async function tryRejoin() {
+      const session = loadSession();
+      if (!session) return false;
+      const {code, role} = session;
+      const snap = await get(ref(db, `rooms/${code}`));
+      if (!snap.exists()) { clearSession(); return false; }
+      const room = snap.val();
+      // Don't rejoin finished or waiting-only rooms that lost their opponent
+      if (room.gameOver || (room.phase==="waiting" && role==="p2")) { clearSession(); return false; }
+      // Reconnect
+      myCode = code; myRole = role;
+      roomRef = ref(db, `rooms/${code}`);
+      listenRoom();
+      return true;
+    }
+
     /* ── STATE ────────────────────────────────────────────────────────────── */
     let myRole=null,myCode=null,roomRef=null,logCount=0,roomSnap=null;
     let sel={name:"",weapon:null,armor:null};
@@ -342,6 +374,7 @@
         p1action:null, p2action:null, resolveState:"idle"
       });
       stopLobbyListener();
+      saveSession(code, "p1");
       $("room-code-display").textContent=code;
       showOnly("screen-waiting");
       listenRoom();
@@ -357,6 +390,7 @@
       if (room.p2){alert("Room is already full.");return;}
       await update(roomRef,{p2:{...data,hp:ARMORS[data.armor].hp},phase:"battle"});
       stopLobbyListener();
+      saveSession(code, "p2");
       listenRoom();
     }
 
@@ -421,6 +455,7 @@
     }
 
     function showResults(room){
+      clearSession();
       showOnly("screen-results");
       const w=room.winner, wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
@@ -475,7 +510,7 @@
     }
 
     /* ── BOOT ─────────────────────────────────────────────────────────────── */
-    document.addEventListener("DOMContentLoaded",()=>{
+    document.addEventListener("DOMContentLoaded", async ()=>{
       buildWeaponGrid(); buildArmorGrid(); showOnly("screen-setup");
 
       $("gladiator-name").oninput=e=>{sel.name=e.target.value;checkReady();};
@@ -493,6 +528,7 @@
         if(roomRef)off(roomRef);
         stopLobbyListener();
         if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null;}
+        clearSession();
         myRole=null;myCode=null;roomRef=null;logCount=0;roomSnap=null;resolving=false;myAction=null;
         sel={name:"",weapon:null,armor:null};
         $("gladiator-name").value=""; $("join-code").value="";
@@ -501,7 +537,22 @@
         checkReady(); showOnly("screen-setup");
       };
 
-      checkReady();
+      $("btn-leave-game").onclick=()=>{
+        if(!confirm("Leave this game? Your opponent will be able to claim victory.")) return;
+        if(roomRef)off(roomRef);
+        if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null;}
+        clearSession();
+        myRole=null;myCode=null;roomRef=null;logCount=0;roomSnap=null;resolving=false;myAction=null;
+        sel={name:"",weapon:null,armor:null};
+        $("gladiator-name").value=""; $("join-code").value="";
+        $("log-scroll").innerHTML=""; $("chronicle-scroll").innerHTML="";
+        document.querySelectorAll(".weapon-card,.armor-card").forEach(x=>x.classList.remove("selected"));
+        checkReady(); showOnly("screen-setup");
+      };
+
+      // Try to rejoin an active session on page load
+      const rejoined = await tryRejoin();
+      if (!rejoined) { showOnly("screen-setup"); checkReady(); }
     });
   </script>
 </head>
@@ -625,6 +676,10 @@
 
       <!-- Step 3: Reveal countdown -->
       <div id="action-waiting" style="display:none"></div>
+
+      <div style="text-align:right;margin-top:0.6rem;border-top:1px solid var(--border);padding-top:0.6rem">
+        <button class="btn" id="btn-leave-game" style="font-size:0.6rem;padding:0.3rem 0.8rem;opacity:0.5">Leave Game</button>
+      </div>
 
     </div>
   </div>
