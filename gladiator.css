@@ -175,6 +175,92 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 .armor-card .a-desc  { font-size: 0.68rem; color: var(--text-dim); font-style: italic; }
 .armor-card .a-stat  { font-family: 'Cinzel', serif; font-size: 0.68rem; color: var(--copper); margin-top: 0.3rem; }
 
+/* ── LOBBY ──────────────────────────────────────────────────────────────────── */
+.lobby-list {
+  margin-top: 0.5rem;
+}
+
+.lobby-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 100px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-bottom: 0.5rem;
+  background: rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  overflow: hidden;
+}
+.lobby-row:hover {
+  border-color: var(--gold-dim);
+  background: rgba(201,168,76,0.05);
+}
+.lobby-row:last-child { margin-bottom: 0; }
+
+.lobby-code {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.85rem;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  padding: 0.85rem 0.8rem;
+  border-right: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+.lobby-host {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.lobby-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.lobby-meta {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.lobby-status {
+  padding: 0.85rem 0.8rem;
+  text-align: center;
+  border-left: 1px solid var(--border);
+}
+
+.status-waiting {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #80c880;
+  border: 1px solid #306030;
+  background: rgba(30,80,30,0.25);
+  padding: 0.2rem 0.5rem;
+  border-radius: 1px;
+}
+
+.lobby-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+.lobby-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.6rem;
+  opacity: 0.3;
+}
+
 /* ── ROOM JOIN ROW ──────────────────────────────────────────────────────────── */
 .join-row {
   display: grid;

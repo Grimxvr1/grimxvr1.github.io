@@ -175,8 +175,52 @@
     /* ── DOM HELPERS ──────────────────────────────────────────────────────── */
     const $  = id => document.getElementById(id);
     const showOnly = id =>
-      ["screen-setup","screen-waiting","screen-battle","screen-results"]
+      ["screen-setup","screen-lobby","screen-waiting","screen-battle","screen-results"]
         .forEach(s => $(s).style.display = s===id?"":"none");
+
+    /* ── LOBBY LISTENER ───────────────────────────────────────────────────── */
+    let lobbyUnsub = null;
+
+    function startLobbyListener() {
+      const roomsRef = ref(db, "rooms");
+      if (lobbyUnsub) off(ref(db,"rooms"));
+      lobbyUnsub = onValue(roomsRef, snap => {
+        const list = $("lobby-list");
+        const empty = $("lobby-empty");
+        list.innerHTML = "";
+        let count = 0;
+        if (snap.exists()) {
+          const rooms = snap.val();
+          Object.values(rooms).forEach(room => {
+            // Only show rooms waiting for a second player
+            if (room.phase !== "waiting" || room.p2) return;
+            count++;
+            const row = document.createElement("div");
+            row.className = "lobby-row";
+            row.innerHTML = `
+              <div class="lobby-code">${room.code}</div>
+              <div class="lobby-host">
+                <span class="lobby-name">${room.p1.name}</span>
+                <span class="lobby-meta">${WEAPONS[room.p1.weapon].emoji} ${WEAPONS[room.p1.weapon].name} · ${ARMORS[room.p1.armor].name}</span>
+              </div>
+              <div class="lobby-status"><span class="status-waiting">Waiting</span></div>`;
+            row.onclick = () => {
+              if (!sel.name.trim() || !sel.weapon || !sel.armor) {
+                alert("Please fill in your name, weapon and armor first.");
+                showOnly("screen-setup"); return;
+              }
+              joinRoom({ name:sel.name, weapon:sel.weapon, armor:sel.armor }, room.code);
+            };
+            list.appendChild(row);
+          });
+        }
+        empty.style.display = count === 0 ? "" : "none";
+      });
+    }
+
+    function stopLobbyListener() {
+      if (lobbyUnsub) { off(ref(db,"rooms")); lobbyUnsub = null; }
+    }
 
     /* ── LOG RENDERING ────────────────────────────────────────────────────── */
     function tagFor(type) {
@@ -274,6 +318,7 @@
         eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),
         allLogs:[], gameOver:false, winner:null
       });
+      stopLobbyListener();
       $("room-code-display").textContent = code;
       showOnly("screen-waiting");
       listenRoom();
@@ -288,6 +333,7 @@
       const room=snap.val();
       if (room.p2) { alert("Room is already full."); return; }
       await update(roomRef, { p2:{...data,hp:ARMORS[data.armor].hp}, phase:"battle" });
+      stopLobbyListener();
       listenRoom();
     }
 
@@ -415,8 +461,8 @@
 
     function checkReady() {
       const ok = sel.name.trim() && sel.weapon && sel.armor;
-      $("btn-create").disabled = !ok;
-      $("btn-join").disabled   = !ok || !$("join-code").value.trim();
+      $("btn-to-lobby").disabled = !ok;
+      $("btn-join").disabled     = !ok || !$("join-code").value.trim();
     }
 
     /* ── BOOT ─────────────────────────────────────────────────────────────── */
@@ -428,12 +474,25 @@
       $("gladiator-name").oninput = e => { sel.name=e.target.value; checkReady(); };
       $("join-code").oninput      = () => checkReady();
 
+      // Setup → Lobby
+      $("btn-to-lobby").onclick = () => {
+        showOnly("screen-lobby");
+        startLobbyListener();
+      };
+
+      // Lobby → back to setup
+      $("btn-lobby-back").onclick = () => {
+        stopLobbyListener();
+        showOnly("screen-setup");
+      };
+
       $("btn-create").onclick = () => createRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor});
       $("btn-join").onclick   = () => joinRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor},$("join-code").value);
       $("btn-fight").onclick  = () => fightRound();
 
       $("btn-play-again").onclick = ()=>{
-        off(roomRef);
+        if (roomRef) off(roomRef);
+        stopLobbyListener();
         myRole=null; myCode=null; roomRef=null; logCount=0; roomSnap=null;
         sel={name:"",weapon:null,armor:null};
         $("gladiator-name").value="";
@@ -479,22 +538,47 @@
 
     <div class="setup-card">
       <div class="section-label">Enter the Arena</div>
+      <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">Enter the Arena</button>
+      <div class="join-row-sub" style="text-align:center;margin-top:0.5rem">Choose your gladiator above, then enter the arena</div>
+    </div>
+
+  </div><!-- /screen-setup -->
+
+  <!-- ── LOBBY ─────────────────────────────────────────────────────────────── -->
+  <div id="screen-lobby" style="display:none">
+
+    <div class="setup-card">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Open Rooms</span>
+        <button class="btn" id="btn-lobby-back" style="padding:0.3rem 1rem;font-size:0.65rem">← Back</button>
+      </div>
+
+      <!-- Room list -->
+      <div class="lobby-list" id="lobby-list"></div>
+      <div id="lobby-empty" class="lobby-empty" style="display:none">
+        <div class="lobby-empty-icon">⚔</div>
+        <div>No challengers await. Be the first to enter the arena.</div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <div class="section-label">Host Your Own Battle</div>
       <div class="join-row">
         <div>
-          <button class="btn btn-fight" id="btn-create" disabled style="width:100%">Create Room</button>
-          <div class="join-row-sub">Host a battle — share your code</div>
+          <button class="btn btn-fight" id="btn-create" style="width:100%">Create Room</button>
+          <div class="join-row-sub">Open a room and share your code</div>
         </div>
         <div>
           <div class="input-btn-row">
             <input type="text" id="join-code" placeholder="Room code…" maxlength="5" />
             <button class="btn" id="btn-join" disabled>Join</button>
           </div>
-          <div class="join-row-sub">Enter your opponent's code</div>
+          <div class="join-row-sub">Enter a code directly</div>
         </div>
       </div>
     </div>
 
-  </div><!-- /screen-setup -->
+  </div><!-- /screen-lobby -->
 
   <!-- ── WAITING ───────────────────────────────────────────────────────────── -->
   <div id="screen-waiting" style="display:none">
