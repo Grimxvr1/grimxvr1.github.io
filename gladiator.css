@@ -1,0 +1,519 @@
+/* ── FONTS ──────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+/* ── RESET ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── TOKENS ─────────────────────────────────────────────────────────────────── */
+:root {
+  --bg:           #1e1810;
+  --bg2:          #252018;
+  --bg3:          #2e2718;
+  --panel:        #1a1510;
+  --gold:         #c9a84c;
+  --gold-dim:     #8c6f2e;
+  --gold-bright:  #f0d080;
+  --copper:       #9b7a42;
+  --text:         #d4c4a0;
+  --text-dim:     #7a6a50;
+  --blood:        #8b0000;
+  --blood2:       #cc2222;
+  --blue:         #1a4a8a;
+  --blue2:        #2d6bbf;
+  --border:       rgba(201,168,76,0.18);
+  --border-strong:rgba(201,168,76,0.45);
+  --row-line:     rgba(201,168,76,0.10);
+}
+
+/* ── BASE ───────────────────────────────────────────────────────────────────── */
+html, body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── PAGE WRAPPER ───────────────────────────────────────────────────────────── */
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 5rem;
+}
+
+/* ── MASTHEAD ───────────────────────────────────────────────────────────────── */
+.masthead {
+  text-align: center;
+  padding: 2rem 0 1.2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.masthead h1 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  font-weight: 900;
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 55%, #7a5a18 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from { filter: drop-shadow(0 0 8px rgba(201,168,76,0.25)); }
+  to   { filter: drop-shadow(0 0 24px rgba(201,168,76,0.65)); }
+}
+
+.masthead .sub {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 0.4rem;
+}
+
+/* ── SETUP CARD ─────────────────────────────────────────────────────────────── */
+.setup-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+/* ── INPUTS ─────────────────────────────────────────────────────────────────── */
+input[type="text"] {
+  width: 100%;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.6rem 0.9rem;
+  color: var(--text);
+  font-family: 'IM Fell English', serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus {
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 8px rgba(201,168,76,0.15);
+}
+input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
+
+/* ── WEAPON GRID ────────────────────────────────────────────────────────────── */
+.weapon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.weapon-card {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+.weapon-card:hover { border-color: var(--border-strong); background: rgba(201,168,76,0.04); }
+.weapon-card.selected {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  box-shadow: 0 0 12px rgba(201,168,76,0.15);
+}
+
+.weapon-card .w-emoji { font-size: 1.6rem; margin-bottom: 0.2rem; }
+.weapon-card .w-name  { font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.weapon-card .w-desc  { font-size: 0.68rem; color: var(--text-dim); font-style: italic; margin-top: 0.15rem; }
+.weapon-card .w-tags  { font-size: 0.62rem; margin-top: 0.35rem; line-height: 1.5; }
+.weapon-card .w-strong { color: #70b870; }
+.weapon-card .w-weak   { color: #b85050; }
+
+/* ── ARMOR GRID ─────────────────────────────────────────────────────────────── */
+.armor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.armor-card {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 0.9rem 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+.armor-card:hover { border-color: var(--border-strong); }
+.armor-card.selected {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  box-shadow: 0 0 12px rgba(201,168,76,0.15);
+}
+.armor-card .a-emoji { font-size: 1.7rem; }
+.armor-card .a-name  { font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin: 0.25rem 0 0.15rem; }
+.armor-card .a-desc  { font-size: 0.68rem; color: var(--text-dim); font-style: italic; }
+.armor-card .a-stat  { font-family: 'Cinzel', serif; font-size: 0.68rem; color: var(--copper); margin-top: 0.3rem; }
+
+/* ── ROOM JOIN ROW ──────────────────────────────────────────────────────────── */
+.join-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+.join-row-sub { font-size: 0.72rem; font-style: italic; color: var(--text-dim); text-align: center; margin-top: 0.35rem; }
+.input-btn-row { display: flex; gap: 0.5rem; }
+
+/* ── BUTTONS ────────────────────────────────────────────────────────────────── */
+.btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.6rem 1.6rem;
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(180deg, #342610 0%, #1c1408 100%);
+  color: var(--gold);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.btn:hover { box-shadow: 0 0 14px rgba(201,168,76,0.25); border-color: var(--gold); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-fight {
+  background: linear-gradient(180deg, #7a1010 0%, #3d0808 100%);
+  border-color: #aa2020;
+  color: #ffd8d8;
+  font-size: 0.8rem;
+  padding: 0.7rem 2.4rem;
+}
+.btn-fight:hover { box-shadow: 0 0 24px rgba(180,30,30,0.5); border-color: var(--blood2); }
+
+/* ── WAITING SCREEN ─────────────────────────────────────────────────────────── */
+.waiting-panel {
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.room-code-display {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2.8rem;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(201,168,76,0.4);
+  padding: 0.8rem 1rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+
+/* ── HP BAR PANEL ───────────────────────────────────────────────────────────── */
+.battle-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.2rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0;
+}
+
+.fighter-block { }
+.fighter-block.right { text-align: right; }
+
+.fighter-block .f-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.fighter-block .f-meta {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--copper);
+  margin-bottom: 0.35rem;
+}
+.hp-bar-bg {
+  height: 8px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.hp-bar-fill { height: 100%; transition: width 0.5s ease; }
+.bar-p1 { background: linear-gradient(90deg, var(--blood), var(--blood2)); }
+.bar-p2 { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+.hp-text {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  margin-top: 0.2rem;
+  color: var(--text-dim);
+}
+
+.round-badge { text-align: center; }
+.round-badge .r-num {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 2rem;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(201,168,76,0.45);
+}
+.round-badge .r-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── BATTLE LOG — Iron Harvest style ───────────────────────────────────────── */
+.battle-log-wrap {
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--panel);
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  border-bottom: 1px solid var(--row-line);
+  animation: rowIn 0.3s ease;
+}
+.log-row:last-child { border-bottom: none; }
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Left column */
+.log-who {
+  padding: 0.75rem 0.8rem 0.75rem 0.9rem;
+  border-right: 1px solid var(--row-line);
+  background: rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.15rem;
+}
+
+.log-who .who-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  line-height: 1.2;
+}
+
+.log-who .who-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--copper);
+  line-height: 1.2;
+}
+
+/* Badge tag */
+.log-tag {
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 1px;
+  border: 1px solid;
+  margin-top: 0.3rem;
+  width: fit-content;
+}
+
+.tag-hit      { color: #e08080; border-color: #8b3030; background: rgba(139,0,0,0.2); }
+.tag-miss     { color: #a0a0a0; border-color: #505050; background: rgba(60,60,60,0.3); }
+.tag-block    { color: #8ab4d0; border-color: #2a5a7a; background: rgba(30,70,110,0.25); }
+.tag-event    { color: var(--gold); border-color: var(--gold-dim); background: rgba(139,100,20,0.15); }
+.tag-env      { color: #9a9070; border-color: #4a4030; background: rgba(50,40,20,0.3); }
+.tag-crit     { color: #f0c060; border-color: #c08020; background: rgba(160,100,0,0.2); }
+.tag-heal     { color: #80c880; border-color: #306030; background: rgba(30,80,30,0.25); }
+.tag-heavy    { color: #b0a090; border-color: #504030; background: rgba(50,40,30,0.3); }
+
+/* Right column */
+.log-text {
+  padding: 0.75rem 1rem 0.75rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* Special rows — no left column (events, env) */
+.log-row.full-width .log-who { display: none; }
+.log-row.full-width { grid-template-columns: 1fr; }
+.log-row.full-width .log-text {
+  font-style: italic;
+  color: var(--text-dim);
+  padding-left: 1.4rem;
+  border-left: 3px solid var(--gold-dim);
+}
+.log-row.log-event .log-text { color: var(--gold); border-left-color: var(--gold); }
+
+/* ── SCROLL CONTAINER ───────────────────────────────────────────────────────── */
+.log-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg3) transparent;
+}
+
+/* ── BATTLE FOOTER ──────────────────────────────────────────────────────────── */
+.battle-footer {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 0.9rem 1.2rem;
+  text-align: center;
+}
+
+/* ── RESULTS ────────────────────────────────────────────────────────────────── */
+.results-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.victor-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.victor-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0.5rem 0 0.2rem;
+  animation: titleGlow 1.2s ease-in-out infinite alternate;
+}
+
+.victor-sub { color: var(--text-dim); font-style: italic; font-size: 0.88rem; }
+
+.final-scores {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin: 1.5rem 0;
+}
+.final-scores .f-hp {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+}
+.final-scores .f-hp.p1 { color: var(--blood2); }
+.final-scores .f-hp.p2 { color: var(--blue2); }
+.final-scores .f-label { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+.final-scores .vs { color: var(--text-dim); align-self: center; }
+
+/* ── WAITING INDICATOR ──────────────────────────────────────────────────────── */
+.waiting-msg {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(201,168,76,0.15);
+  border-top-color: var(--gold-dim);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SPARKS ─────────────────────────────────────────────────────────────────── */
+#sparks { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.spark {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: sparkFly 1.4s ease-out forwards;
+}
+@keyframes sparkFly {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-100px) translateX(var(--dx)) scale(0); }
+}
+
+/* ── DIVIDER ────────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  margin: 1.5rem 0;
+  position: relative;
+}
+.divider::before {
+  content: '⚔';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg); padding: 0 0.6rem;
+  color: var(--gold-dim); font-size: 0.8rem;
+}
+
+/* ── UTILITIES ──────────────────────────────────────────────────────────────── */
+.mt-1 { margin-top: 0.8rem; }
+.mt-2 { margin-top: 1.4rem; }
+.text-center { text-align: center; }
+.text-muted  { color: var(--text-dim); font-style: italic; font-size: 0.82rem; }
+.text-gold   { color: var(--gold); font-family: 'Cinzel', serif; }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .armor-grid  { grid-template-columns: 1fr; }
+  .weapon-grid { grid-template-columns: repeat(2, 1fr); }
+  .battle-header { grid-template-columns: 1fr; gap: 0.8rem; }
+  .join-row { grid-template-columns: 1fr; }
+  .log-row  { grid-template-columns: 100px 1fr; }
+  .log-who  { padding: 0.6rem; }
+}

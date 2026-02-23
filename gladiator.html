@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gladiator Gauntlet</title>
+  <link rel="stylesheet" href="gladiator.css" />
+
+  <script type="module">
+    import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, off, update }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    /* ── FIREBASE ─────────────────────────────────────────────────────────── */
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDeJPD7Ay14L1As3K4HkWU04Go4IBPW0wA",
+      authDomain:        "gladiator-gauntlet.firebaseapp.com",
+      databaseURL:       "https://gladiator-gauntlet-default-rtdb.firebaseio.com",
+      projectId:         "gladiator-gauntlet",
+      storageBucket:     "gladiator-gauntlet.firebasestorage.app",
+      messagingSenderId: "803427197228",
+      appId:             "1:803427197228:web:f0bd48a2eecc24dd648c89"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    /* ── DATA ─────────────────────────────────────────────────────────────── */
+    const WEAPONS = {
+      greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[18,28], strongAgainst:["spear","flail"],          weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
+      maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[10,18], strongAgainst:["greatsword","warAxe"],     weakAgainst:["spear","crossbow"],        flavor:"bludgeons",   blockChance:0.25 },
+      spear:       { name:"War Spear",     emoji:"🗡️",  desc:"Long reach, keep enemies at bay",    baseDamage:[14,22], strongAgainst:["maceShield","dualblades"], weakAgainst:["greatsword","warAxe"],     flavor:"pierces" },
+      dualblades:  { name:"Dual Blades",   emoji:"🔪",  desc:"Twin daggers, fast and deadly",       baseDamage:[9,16],  strongAgainst:["greatsword","crossbow"],   weakAgainst:["spear","morningstar"],     flavor:"slashes" },
+      warAxe:      { name:"War Axe",       emoji:"🪓",  desc:"Heavy axe, brutal power",             baseDamage:[16,26], strongAgainst:["spear","flail"],          weakAgainst:["maceShield","dualblades"], flavor:"hacks at" },
+      morningstar: { name:"Morningstar",   emoji:"💥",  desc:"Spiked flail, armor-crushing",        baseDamage:[13,21], strongAgainst:["dualblades","maceShield"], weakAgainst:["greatsword","warAxe"],    flavor:"smashes",    armorPierce:0.2 },
+      crossbow:    { name:"Crossbow",      emoji:"🏹",  desc:"Ranged bolts, hard to dodge",         baseDamage:[15,24], strongAgainst:["maceShield","morningstar"],weakAgainst:["dualblades","flail"],      flavor:"shoots" },
+      flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[12,22], strongAgainst:["crossbow","dualblades"],   weakAgainst:["greatsword","spear"],     flavor:"lashes",     shieldBreak:true },
+    };
+
+    const ARMORS = {
+      heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"Attacks every 2 rounds. Maximum protection.", hp:160, defense:0.28, attackEvery:2, attackTimes:1 },
+      medium: { name:"Chainmail",   emoji:"🔗", desc:"Attacks every round. Balanced fighter.",       hp:120, defense:0.15, attackEvery:1, attackTimes:1 },
+      light:  { name:"Leather",     emoji:"🦺", desc:"Attacks twice per round. Reduced HP.",         hp:85,  defense:0.05, attackEvery:1, attackTimes:2 },
+    };
+
+    const ROUND_EVENTS = [
+      { text:"The crowd hurls sand into the arena — visibility drops!",                               effect:"blind" },
+      { text:"A torch falls — the arena floor catches fire! Both fighters take 5 damage.",            effect:"fire",     damage:5 },
+      { text:"The crowd roars — both fighters are ENERGIZED! +20% damage this round.",                effect:"energized",bonus:0.2 },
+      { text:"A slave throws a hidden dagger into the pit — it lands near one fighter!",              effect:"dagger",   bonus:8 },
+      { text:"The announcer calls for blood — critical chance is doubled this round!",                effect:"critical" },
+      { text:"A cloud passes over the sun. Shadows fall across the arena.",                           effect:"none" },
+      { text:"The Emperor rises — both fighters pause... then fight harder. +10% damage.",            effect:"emperor",  bonus:0.1 },
+      { text:"Chains from a fallen fighter rattle underfoot — movement is hindered.",                 effect:"chains",   penalty:0.15 },
+      { text:"The medicus rushes in — one random fighter receives emergency aid! +15 HP.",            effect:"heal",     amount:15 },
+      { text:"The gates rattle — a beast prowls just beyond. Fear grips the arena.",                  effect:"none" },
+      { text:"Rain falls on the open colosseum. The stone becomes slick.",                            effect:"slip" },
+      { text:"A horn sounds — the crowd calls for EXECUTION. One fighter strikes with extra force.",  effect:"execute",  bonus:12 },
+    ];
+
+    /* ── HELPERS ──────────────────────────────────────────────────────────── */
+    const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+
+    function calcDamage(attacker, defender, effect) {
+      const w = WEAPONS[attacker.weapon];
+      const defArmor = ARMORS[defender.armor];
+      let [dMin,dMax] = w.baseDamage;
+      if (w.strongAgainst.includes(defender.weapon)) { dMin=Math.floor(dMin*1.3); dMax=Math.floor(dMax*1.3); }
+      if (w.weakAgainst.includes(defender.weapon))   { dMin=Math.floor(dMin*0.7); dMax=Math.floor(dMax*0.7); }
+      let dmg = rand(dMin,dMax);
+      if (effect==="energized") dmg=Math.floor(dmg*1.2);
+      if (effect==="emperor")   dmg=Math.floor(dmg*1.1);
+      if (effect==="chains")    dmg=Math.floor(dmg*0.85);
+      const isCrit = effect==="critical" && Math.random()<0.4;
+      if (isCrit) dmg=Math.floor(dmg*2);
+      let defRatio = defArmor.defense;
+      if (w.armorPierce) defRatio *= (1-w.armorPierce);
+      const blocked = !w.shieldBreak && defender.weapon==="maceShield" && Math.random()<0.25;
+      if (blocked) return { dmg:0, blocked:true, crit:false };
+      dmg = Math.max(1, Math.floor(dmg*(1-defRatio)));
+      return { dmg, blocked:false, crit:isCrit };
+    }
+
+    function processRound(state) {
+      const event  = ROUND_EVENTS[state.eventIdx % ROUND_EVENTS.length];
+      const effect = event.effect;
+      const logs   = [];
+      let p1 = { ...state.p1 };
+      let p2 = { ...state.p2 };
+
+      // Arena event row
+      logs.push({ type:"event", text:event.text });
+
+      if (effect==="fire") {
+        p1.hp -= event.damage; p2.hp -= event.damage;
+        logs.push({ type:"env", text:`Both fighters take ${event.damage} fire damage from the burning floor.` });
+      }
+
+      const daggerLucky  = Math.random()<0.5?"p1":"p2";
+      const executeLucky = Math.random()<0.5?"p1":"p2";
+
+      if (effect==="heal") {
+        const lucky = Math.random()<0.5?"p1":"p2";
+        const target = lucky==="p1"?p1:p2;
+        target.hp += event.amount;
+        logs.push({ type:"env", healTarget:lucky, text:`${target.name} receives emergency aid from the medicus. +${event.amount} HP.` });
+        if (lucky==="p1") p1=target; else p2=target;
+      }
+      if (effect==="dagger")  logs.push({ type:"env", text:`${daggerLucky==="p1"?p1.name:p2.name} snatches the hidden dagger — bonus damage this round.` });
+      if (effect==="execute") logs.push({ type:"env", text:`${executeLucky==="p1"?p1.name:p2.name} hears the crowd's hunger and readies a savage blow.` });
+
+      // P1 attacks
+      const p1Armor  = ARMORS[p1.armor];
+      const p1Swings = p1Armor.attackEvery===1 || state.round%p1Armor.attackEvery===0;
+      if (p1Swings) {
+        for (let i=0;i<p1Armor.attackTimes;i++) {
+          const r = calcDamage(p1,p2,effect);
+          if (r.blocked) {
+            logs.push({ type:"block", attacker:p1, defender:p2,
+              text:`${p2.name} raises their shield — the blow glances off harmlessly.` });
+          } else {
+            let total = r.dmg;
+            if (effect==="dagger"  && daggerLucky==="p1") total += Math.floor(event.bonus/p1Armor.attackTimes);
+            if (effect==="execute" && executeLucky==="p1") total += Math.floor(event.bonus/p1Armor.attackTimes);
+            p2.hp -= total;
+            logs.push({ type:r.crit?"crit":"hit", attacker:p1, defender:p2, dmg:total,
+              text:`${p1.name} ${WEAPONS[p1.weapon].flavor} ${p2.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}` });
+          }
+        }
+      } else {
+        logs.push({ type:"heavy", attacker:p1,
+          text:`${p1.name} braces in heavy plate — too encumbered to swing this round.` });
+      }
+
+      // P2 attacks
+      const p2Armor  = ARMORS[p2.armor];
+      const p2Swings = p2Armor.attackEvery===1 || state.round%p2Armor.attackEvery===0;
+      if (p2Swings) {
+        for (let i=0;i<p2Armor.attackTimes;i++) {
+          const r = calcDamage(p2,p1,effect);
+          if (r.blocked) {
+            logs.push({ type:"block", attacker:p2, defender:p1,
+              text:`${p1.name} raises their shield — the blow glances off harmlessly.` });
+          } else {
+            let total = r.dmg;
+            if (effect==="dagger"  && daggerLucky==="p2") total += Math.floor(event.bonus/p2Armor.attackTimes);
+            if (effect==="execute" && executeLucky==="p2") total += Math.floor(event.bonus/p2Armor.attackTimes);
+            p1.hp -= total;
+            logs.push({ type:r.crit?"crit":"hit", attacker:p2, defender:p1, dmg:total,
+              text:`${p2.name} ${WEAPONS[p2.weapon].flavor} ${p1.name} for ${total} damage${r.crit?" — a devastating critical strike!":"."}` });
+          }
+        }
+      } else {
+        logs.push({ type:"heavy", attacker:p2,
+          text:`${p2.name} braces in heavy plate — too encumbered to swing this round.` });
+      }
+
+      p1.hp = Math.max(0, Math.min(p1.hp, ARMORS[p1.armor].hp));
+      p2.hp = Math.max(0, Math.min(p2.hp, ARMORS[p2.armor].hp));
+
+      const nextRound = state.round + 1;
+      const gameOver  = p1.hp<=0 || p2.hp<=0 || nextRound>5;
+      let winner = null;
+      if (gameOver) {
+        if (p1.hp<=0 && p2.hp<=0) winner="draw";
+        else if (p1.hp<=0)        winner="p2";
+        else if (p2.hp<=0)        winner="p1";
+        else                       winner = p1.hp>=p2.hp?"p1":"p2";
+      }
+      return { p1, p2, round:nextRound, eventIdx:state.eventIdx+1, logs, gameOver, winner };
+    }
+
+    /* ── DOM HELPERS ──────────────────────────────────────────────────────── */
+    const $  = id => document.getElementById(id);
+    const showOnly = id =>
+      ["screen-setup","screen-waiting","screen-battle","screen-results"]
+        .forEach(s => $(s).style.display = s===id?"":"none");
+
+    /* ── LOG RENDERING ────────────────────────────────────────────────────── */
+    function tagFor(type) {
+      switch(type) {
+        case "hit":    return ["HIT",    "tag-hit"];
+        case "crit":   return ["CRITICAL","tag-crit"];
+        case "block":  return ["BLOCK",  "tag-block"];
+        case "miss":   return ["MISS",   "tag-miss"];
+        case "heavy":  return ["BRACE",  "tag-heavy"];
+        case "heal":   return ["HEAL",   "tag-heal"];
+        case "event":  return ["EVENT",  "tag-event"];
+        case "env":    return ["ARENA",  "tag-env"];
+        default:       return ["—",      "tag-env"];
+      }
+    }
+
+    function buildLogRow(entry) {
+      const row = document.createElement("div");
+
+      if (entry.type==="event" || entry.type==="env") {
+        row.className = `log-row full-width ${entry.type==="event"?"log-event":"log-env"}`;
+        row.innerHTML = `<div class="log-text">${entry.text}</div>`;
+        return row;
+      }
+
+      const attacker = entry.attacker;
+      const [tagText, tagClass] = tagFor(entry.type);
+      const weaponName = attacker ? WEAPONS[attacker.weapon].name : "";
+      const armorName  = attacker ? ARMORS[attacker.armor].name   : "";
+
+      row.className = "log-row";
+      row.innerHTML = `
+        <div class="log-who">
+          <span class="who-name">${attacker ? attacker.name : "Arena"}</span>
+          <span class="who-sub">${weaponName}${armorName ? " · "+armorName:""}</span>
+          <span class="log-tag ${tagClass}">${tagText}</span>
+        </div>
+        <div class="log-text">${entry.text}</div>`;
+      return row;
+    }
+
+    function appendLogs(entries, container) {
+      entries.forEach(e => container.appendChild(buildLogRow(e)));
+      container.scrollTop = container.scrollHeight;
+    }
+
+    /* ── HP BAR ───────────────────────────────────────────────────────────── */
+    function renderFighter(p, side) {
+      const maxHp = ARMORS[p.armor].hp;
+      const pct   = Math.max(0,(p.hp/maxHp)*100).toFixed(1);
+      const cls   = side==="p1"?"bar-p1":"bar-p2";
+      $(`${side}-block`).innerHTML = `
+        <div class="f-name">${p.name}</div>
+        <div class="f-meta">${WEAPONS[p.weapon].name} · ${ARMORS[p.armor].name}</div>
+        <div class="hp-bar-bg"><div class="hp-bar-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="hp-text">${Math.max(0,p.hp)} / ${maxHp} HP</div>`;
+    }
+
+    function updateBattle(room) {
+      renderFighter(room.p1,"p1");
+      renderFighter(room.p2,"p2");
+      $("round-num").textContent = Math.min(room.round,5);
+    }
+
+    /* ── STATE ────────────────────────────────────────────────────────────── */
+    let myRole=null, myCode=null, roomRef=null, logCount=0, roomSnap=null;
+    let sel = { name:"", weapon:null, armor:null };
+
+    /* ── FIREBASE OPS ─────────────────────────────────────────────────────── */
+    async function createRoom(data) {
+      const code = Math.random().toString(36).substr(2,5).toUpperCase();
+      myCode=code; myRole="p1";
+      roomRef = ref(db,`rooms/${code}`);
+      await set(roomRef, {
+        code, phase:"waiting",
+        p1:{ ...data, hp:ARMORS[data.armor].hp },
+        p2:null, round:1,
+        eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),
+        allLogs:[], gameOver:false, winner:null
+      });
+      $("room-code-display").textContent = code;
+      showOnly("screen-waiting");
+      listenRoom();
+    }
+
+    async function joinRoom(data, code) {
+      code=code.trim().toUpperCase();
+      myCode=code; myRole="p2";
+      roomRef=ref(db,`rooms/${code}`);
+      const snap=await get(roomRef);
+      if (!snap.exists())  { alert("Room not found. Check the code."); return; }
+      const room=snap.val();
+      if (room.p2) { alert("Room is already full."); return; }
+      await update(roomRef, { p2:{...data,hp:ARMORS[data.armor].hp}, phase:"battle" });
+      listenRoom();
+    }
+
+    function listenRoom() {
+      onValue(roomRef, snap => {
+        if (!snap.exists()) return;
+        const room = snap.val();
+        roomSnap = room;
+
+        // Sync new log entries
+        const stored = room.allLogs ? Object.values(room.allLogs) : [];
+        if (stored.length > logCount) {
+          const fresh = stored.slice(logCount);
+          logCount = stored.length;
+          appendLogs(fresh, $("log-scroll"));
+          triggerSparks();
+        }
+
+        if ((room.phase==="battle" || room.phase==="waiting") && room.p1 && room.p2) {
+          showOnly("screen-battle");
+          updateBattle(room);
+          // Fight button vs waiting message
+          if (myRole==="p1" && !room.gameOver) {
+            $("btn-fight").style.display  = "";
+            $("btn-fight").textContent    = `⚔  Fight Round ${Math.min(room.round,5)}`;
+            $("waiting-turn").style.display = "none";
+          } else if (!room.gameOver) {
+            $("btn-fight").style.display  = "none";
+            $("waiting-turn").style.display = "";
+            $("waiting-turn").innerHTML = `<span class="spinner"></span> Waiting for ${room.p1.name} to advance the round…`;
+          }
+        }
+
+        if (room.gameOver) showResults(room);
+      });
+    }
+
+    async function fightRound() {
+      if (!roomSnap || roomSnap.gameOver) return;
+      $("btn-fight").disabled=true;
+      $("btn-fight").textContent="Fighting…";
+      const result = processRound(roomSnap);
+      const current = roomSnap.allLogs ? Object.values(roomSnap.allLogs) : [];
+      await update(roomRef, {
+        p1:result.p1, p2:result.p2,
+        round:result.round, eventIdx:result.eventIdx,
+        allLogs:[...current,...result.logs],
+        gameOver:result.gameOver, winner:result.winner,
+        phase:result.gameOver?"done":"battle"
+      });
+      $("btn-fight").disabled=false;
+    }
+
+    function showResults(room) {
+      showOnly("screen-results");
+      const w = room.winner;
+      const wd = w==="p1"?room.p1:w==="p2"?room.p2:null;
+      $("victor-label").textContent = w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
+      $("victor-name").textContent  = w==="draw"?"DRAW" : wd.name;
+      $("victor-sub").textContent   = wd ? `${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}` : "";
+      $("result-p1-hp").textContent   = `${Math.max(0,room.p1.hp)} HP`;
+      $("result-p1-name").textContent = room.p1.name;
+      $("result-p2-hp").textContent   = `${Math.max(0,room.p2.hp)} HP`;
+      $("result-p2-name").textContent = room.p2.name;
+      // Chronicle
+      const box = $("chronicle-scroll");
+      box.innerHTML="";
+      const logs = room.allLogs ? Object.values(room.allLogs) : [];
+      appendLogs(logs, box);
+    }
+
+    /* ── SPARKS ───────────────────────────────────────────────────────────── */
+    function triggerSparks() {
+      const c=$("sparks");
+      for (let i=0;i<10;i++) {
+        const s=document.createElement("div");
+        s.className="spark";
+        s.style.left=(Math.random()*100)+"vw";
+        s.style.top=(40+Math.random()*20)+"vh";
+        s.style.setProperty("--dx",((Math.random()-0.5)*100)+"px");
+        c.appendChild(s);
+        setTimeout(()=>s.remove(),1450);
+      }
+    }
+
+    /* ── SELECTION BUILDER ────────────────────────────────────────────────── */
+    function buildWeaponGrid() {
+      const g=$("weapon-grid");
+      Object.entries(WEAPONS).forEach(([key,w])=>{
+        const c=document.createElement("div");
+        c.className="weapon-card"; c.dataset.key=key;
+        c.innerHTML=`
+          <div class="w-emoji">${w.emoji}</div>
+          <div class="w-name">${w.name}</div>
+          <div class="w-desc">${w.desc}</div>
+          <div class="w-tags">
+            <span class="w-strong">▲ ${w.strongAgainst.map(k=>WEAPONS[k].name).join(", ")}</span><br>
+            <span class="w-weak">▼ ${w.weakAgainst.map(k=>WEAPONS[k].name).join(", ")}</span>
+          </div>`;
+        c.onclick=()=>{
+          document.querySelectorAll(".weapon-card").forEach(x=>x.classList.remove("selected"));
+          c.classList.add("selected"); sel.weapon=key; checkReady();
+        };
+        g.appendChild(c);
+      });
+    }
+
+    function buildArmorGrid() {
+      const g=$("armor-grid");
+      Object.entries(ARMORS).forEach(([key,a])=>{
+        const c=document.createElement("div");
+        c.className="armor-card"; c.dataset.key=key;
+        c.innerHTML=`
+          <div class="a-emoji">${a.emoji}</div>
+          <div class="a-name">${a.name}</div>
+          <div class="a-desc">${a.desc}</div>
+          <div class="a-stat">${a.hp} HP · ${Math.round(a.defense*100)}% def</div>`;
+        c.onclick=()=>{
+          document.querySelectorAll(".armor-card").forEach(x=>x.classList.remove("selected"));
+          c.classList.add("selected"); sel.armor=key; checkReady();
+        };
+        g.appendChild(c);
+      });
+    }
+
+    function checkReady() {
+      const ok = sel.name.trim() && sel.weapon && sel.armor;
+      $("btn-create").disabled = !ok;
+      $("btn-join").disabled   = !ok || !$("join-code").value.trim();
+    }
+
+    /* ── BOOT ─────────────────────────────────────────────────────────────── */
+    document.addEventListener("DOMContentLoaded", ()=>{
+      buildWeaponGrid();
+      buildArmorGrid();
+      showOnly("screen-setup");
+
+      $("gladiator-name").oninput = e => { sel.name=e.target.value; checkReady(); };
+      $("join-code").oninput      = () => checkReady();
+
+      $("btn-create").onclick = () => createRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor});
+      $("btn-join").onclick   = () => joinRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor},$("join-code").value);
+      $("btn-fight").onclick  = () => fightRound();
+
+      $("btn-play-again").onclick = ()=>{
+        off(roomRef);
+        myRole=null; myCode=null; roomRef=null; logCount=0; roomSnap=null;
+        sel={name:"",weapon:null,armor:null};
+        $("gladiator-name").value="";
+        $("join-code").value="";
+        $("log-scroll").innerHTML="";
+        $("chronicle-scroll").innerHTML="";
+        document.querySelectorAll(".weapon-card,.armor-card").forEach(x=>x.classList.remove("selected"));
+        checkReady();
+        showOnly("screen-setup");
+      };
+
+      checkReady();
+    });
+  </script>
+</head>
+<body>
+<div id="sparks"></div>
+
+<div class="page">
+
+  <div class="masthead">
+    <h1>Gladiator Gauntlet</h1>
+    <div class="sub">Five Rounds · One Victor · No Mercy</div>
+  </div>
+
+  <!-- ── SETUP ────────────────────────────────────────────────────────────── -->
+  <div id="screen-setup">
+
+    <div class="setup-card">
+      <div class="section-label">Your Name</div>
+      <input type="text" id="gladiator-name" placeholder="Enter your gladiator name…" maxlength="24" />
+    </div>
+
+    <div class="setup-card">
+      <div class="section-label">Choose Your Weapon</div>
+      <div class="weapon-grid" id="weapon-grid"></div>
+    </div>
+
+    <div class="setup-card">
+      <div class="section-label">Choose Your Armor</div>
+      <div class="armor-grid" id="armor-grid"></div>
+    </div>
+
+    <div class="setup-card">
+      <div class="section-label">Enter the Arena</div>
+      <div class="join-row">
+        <div>
+          <button class="btn btn-fight" id="btn-create" disabled style="width:100%">Create Room</button>
+          <div class="join-row-sub">Host a battle — share your code</div>
+        </div>
+        <div>
+          <div class="input-btn-row">
+            <input type="text" id="join-code" placeholder="Room code…" maxlength="5" />
+            <button class="btn" id="btn-join" disabled>Join</button>
+          </div>
+          <div class="join-row-sub">Enter your opponent's code</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen-setup -->
+
+  <!-- ── WAITING ───────────────────────────────────────────────────────────── -->
+  <div id="screen-waiting" style="display:none">
+    <div class="waiting-panel">
+      <div class="text-gold" style="font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;margin-bottom:0.5rem">Your Room Code</div>
+      <div class="room-code-display" id="room-code-display">-----</div>
+      <div class="text-muted mt-1">Share this code with your opponent</div>
+      <div class="mt-2 waiting-msg"><span class="spinner"></span> Awaiting challenger…</div>
+    </div>
+  </div>
+
+  <!-- ── BATTLE ────────────────────────────────────────────────────────────── -->
+  <div id="screen-battle" style="display:none">
+
+    <!-- HP bars -->
+    <div class="battle-header">
+      <div class="fighter-block" id="p1-block"></div>
+      <div class="round-badge">
+        <div class="r-num" id="round-num">1</div>
+        <div class="r-label">Round</div>
+      </div>
+      <div class="fighter-block right" id="p2-block"></div>
+    </div>
+
+    <!-- Chronicle log -->
+    <div class="battle-log-wrap">
+      <div class="log-scroll" id="log-scroll"></div>
+    </div>
+
+    <!-- Action row -->
+    <div class="battle-footer">
+      <button class="btn btn-fight" id="btn-fight" style="display:none">⚔  Fight Round 1</button>
+      <div class="waiting-msg" id="waiting-turn" style="display:none"></div>
+    </div>
+
+  </div><!-- /screen-battle -->
+
+  <!-- ── RESULTS ───────────────────────────────────────────────────────────── -->
+  <div id="screen-results" style="display:none">
+    <div class="results-panel">
+      <div class="victor-label" id="victor-label">The Victor Stands</div>
+      <div class="victor-name"  id="victor-name"></div>
+      <div class="victor-sub"   id="victor-sub"></div>
+
+      <div class="final-scores">
+        <div>
+          <div class="f-hp p1" id="result-p1-hp"></div>
+          <div class="f-label"  id="result-p1-name"></div>
+        </div>
+        <div class="vs">vs</div>
+        <div>
+          <div class="f-hp p2" id="result-p2-hp"></div>
+          <div class="f-label"  id="result-p2-name"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-label" style="text-align:left;margin-bottom:0">Battle Chronicle</div>
+      <div class="battle-log-wrap mt-1">
+        <div class="log-scroll" id="chronicle-scroll" style="max-height:280px"></div>
+      </div>
+
+      <button class="btn mt-2" id="btn-play-again">Return to the Gates</button>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
