@@ -14,17 +14,9 @@
       getAuth, signInAnonymously, onAuthStateChanged,
       GoogleAuthProvider, linkWithPopup, unlink
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { firebaseConfig } from "./firebase-config.js";
 
-    /* ── FIREBASE ─────────────────────────────────────────────────────────── */
-    const firebaseConfig = {
-      apiKey:            "AIzaSyDeJPD7Ay14L1As3K4HkWU04Go4IBPW0wA",
-      authDomain:        "gladiator-gauntlet.firebaseapp.com",
-      databaseURL:       "https://gladiator-gauntlet-default-rtdb.firebaseio.com",
-      projectId:         "gladiator-gauntlet",
-      storageBucket:     "gladiator-gauntlet.firebasestorage.app",
-      messagingSenderId: "803427197228",
-      appId:             "1:803427197228:web:f0bd48a2eecc24dd648c89"
-    };
+    /* ── FIREBASE INIT ────────────────────────────────────────────────────── */
     const app  = initializeApp(firebaseConfig);
     const db   = getDatabase(app);
     const auth = getAuth(app);
@@ -756,7 +748,7 @@
 <div class="page">
   <div class="masthead">
     <h1>Gladiator Gauntlet</h1>
-    <div class="sub">Hit · Block · Dodge · Fight to the Death</div>
+    <div class="sub">Where Simple Choices Forge Legendary Victories.</div>
   </div>
 
   <div id="auth-bar" class="auth-bar"></div>
