@@ -374,9 +374,8 @@
       const newGold=(playerProfile.gold||0)-cost;
       playerProfile.gold=newGold; playerProfile.name=newName;
       await update(ref(db,`players/${currentUser.uid}`),{name:newName,gold:newGold});
-      // Also update setup name field
-      $("gladiator-name").value=newName; sel.name=newName; checkReady();
       $("modal-name-change").style.display="none";
+      updateNameDisplay();
       buildShop(); updateAuthUI(currentUser);
       showToast(`Name changed to "${newName}"!`);
     }
@@ -392,8 +391,8 @@
       if(!name){showToast("Please enter a name to continue.",true);return;}
       if(name.length>24){showToast("Name must be 24 characters or fewer.",true);return;}
       await ensurePlayerExists(currentUser.uid,name);
-      $("gladiator-name").value=name; sel.name=name; checkReady();
       $("modal-name-prompt").style.display="none";
+      updateNameDisplay();
       updateAuthUI(currentUser);
     }
 
@@ -637,6 +636,17 @@
         g.appendChild(c);
       });
     }
+    function updateNameDisplay(){
+      const name=playerProfile.name||"";
+      // Keep hidden input and sel in sync
+      $("gladiator-name").value=name;
+      sel.name=name;
+      // Update the visible display card
+      const disp=$("gladiator-name-display");
+      if(disp) disp.innerHTML=formatDisplayName(name,playerProfile)||"<span style='opacity:0.4'>—</span>";
+      checkReady();
+    }
+
     function checkReady(){
       const ok=sel.name.trim()&&sel.weapon&&sel.armor;
       $("btn-to-lobby").disabled=!ok; $("btn-join").disabled=!ok||!$("join-code").value.trim();
@@ -649,18 +659,16 @@
       clearSession();
       myRole=null;myCode=null;roomRef=null;logCount=0;roomSnap=null;resolving=false;myAction=null;
       sel={name:playerProfile.name||"",weapon:null,armor:null};
-      $("gladiator-name").value=playerProfile.name||"";
       $("join-code").value="";
       $("log-scroll").innerHTML="";$("chronicle-scroll").innerHTML="";
       document.querySelectorAll(".weapon-card,.armor-card").forEach(x=>x.classList.remove("selected"));
-      checkReady(); showOnly("screen-setup");
+      updateNameDisplay(); showOnly("screen-setup");
     }
 
     /* ── BOOT ─────────────────────────────────────────────────────────────── */
     document.addEventListener("DOMContentLoaded",async()=>{
       buildWeaponGrid(); buildArmorGrid();
 
-      $("gladiator-name").oninput=e=>{sel.name=e.target.value;checkReady();};
       $("join-code").oninput=()=>checkReady();
       $("btn-to-lobby").onclick=()=>{showOnly("screen-lobby");startLobbyListener();};
       $("btn-lobby-back").onclick=()=>{stopLobbyListener();showOnly("screen-setup");};
@@ -692,9 +700,7 @@
 
           // Pre-fill name if we have one saved
           if(playerProfile.name){
-            $("gladiator-name").value=playerProfile.name;
-            sel.name=playerProfile.name;
-            checkReady();
+            updateNameDisplay();
           }
 
           if(!myRole){
@@ -758,8 +764,13 @@
   <!-- SETUP -->
   <div id="screen-setup">
     <div class="setup-card">
-      <div class="section-label">Your Name</div>
-      <input type="text" id="gladiator-name" placeholder="Enter your gladiator name…" maxlength="24" />
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Your Gladiator</span>
+        <span class="name-locked-hint">Change name in ⚙ Shop</span>
+      </div>
+      <div id="gladiator-name-display" class="gladiator-name-display"></div>
+      <!-- Hidden input kept for internal sel.name tracking -->
+      <input type="text" id="gladiator-name" style="display:none" maxlength="24" />
     </div>
     <div class="setup-card">
       <div class="section-label">Choose Your Weapon</div>

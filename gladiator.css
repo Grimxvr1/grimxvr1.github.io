@@ -854,6 +854,25 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 }
 .toast-error { border-color: var(--blood2); color: #ffaaaa; }
 
+.gladiator-name-display {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 0.65rem 0.2rem;
+  min-height: 2.4rem;
+}
+
+.name-locked-hint {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
 /* ── SHOP ───────────────────────────────────────────────────────────────────── */
 .shop-gold-hdr {
   font-family: 'Cinzel', serif;
