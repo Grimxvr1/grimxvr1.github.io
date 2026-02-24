@@ -44,37 +44,8 @@ html, body {
 
 /* ── MASTHEAD ───────────────────────────────────────────────────────────────── */
 .masthead {
-  text-align: center;
-  padding: 2rem 0 1.2rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 2rem;
-}
-
-.masthead h1 {
-  font-family: 'Cinzel Decorative', serif;
-  font-size: clamp(1.8rem, 5vw, 3.2rem);
-  font-weight: 900;
-  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 55%, #7a5a18 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
-  animation: titleGlow 3s ease-in-out infinite alternate;
-}
-
-@keyframes titleGlow {
-  from { filter: drop-shadow(0 0 8px rgba(201,168,76,0.25)); }
-  to   { filter: drop-shadow(0 0 24px rgba(201,168,76,0.65)); }
-}
-
-.masthead .sub {
-  font-family: 'Cinzel', serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.45em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-top: 0.4rem;
+  margin-bottom: 1.5rem;
+  line-height: 0;
 }
 
 /* ── SETUP CARD ─────────────────────────────────────────────────────────────── */
