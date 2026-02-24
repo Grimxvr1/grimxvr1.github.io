@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gladiator Gauntlet — The Codex</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0e0c09;
+      --bg2:         #141209;
+      --bg3:         #1a1710;
+      --border:      rgba(201,168,76,0.18);
+      --border-strong: rgba(201,168,76,0.4);
+      --gold:        #c9a84c;
+      --gold-dim:    #8a6e2a;
+      --copper:      #b87333;
+      --text:        #d4c9a8;
+      --text-dim:    #8a7e62;
+      --blood:       #7a1a1a;
+      --blood2:      #cc2222;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IM Fell English', serif;
+      font-size: 1rem;
+      line-height: 1.75;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND TEXTURE ─────────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(201,168,76,0.012) 40px, rgba(201,168,76,0.012) 41px),
+        repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(201,168,76,0.012) 40px, rgba(201,168,76,0.012) 41px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 1.5rem 5rem;
+    }
+
+    /* ── HERO ───────────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 2.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.9rem;
+      border-radius: 1px;
+      margin-bottom: 2.5rem;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .back-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+    .hero-eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 0.8rem;
+    }
+
+    .hero-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1.15;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 40px rgba(201,168,76,0.3);
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-sub {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-desc {
+      font-style: italic;
+      color: var(--text-dim);
+      max-width: 520px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+    }
+
+    /* ── NAV ────────────────────────────────────────────────────────────────── */
+    .toc {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 1.5rem 1.8rem;
+      margin-bottom: 3rem;
+      border-radius: 1px;
+    }
+
+    .toc-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 1rem;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.3rem 2rem;
+    }
+
+    .toc-list a {
+      font-family: 'Cinzel', serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .toc-list a::before { content: '⚔'; font-size: 0.55rem; color: var(--gold-dim); }
+    .toc-list a:hover { color: var(--gold); }
+
+    /* ── SECTIONS ───────────────────────────────────────────────────────────── */
+    .section {
+      margin-bottom: 3.5rem;
+      scroll-margin-top: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-icon { font-size: 1.5rem; }
+
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .section-num {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 0.65rem;
+      color: var(--gold-dim);
+      opacity: 0.6;
+      margin-left: auto;
+    }
+
+    p { margin-bottom: 1rem; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    strong {
+      font-style: normal;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    em { color: var(--copper); }
+
+    /* ── CALLOUT BOXES ──────────────────────────────────────────────────────── */
+    .callout {
+      border-left: 3px solid var(--gold-dim);
+      background: rgba(201,168,76,0.04);
+      padding: 1rem 1.2rem;
+      margin: 1.4rem 0;
+      font-style: italic;
+      color: var(--text-dim);
+    }
+    .callout strong { color: var(--gold); }
+
+    .callout-danger {
+      border-left-color: var(--blood2);
+      background: rgba(204,34,34,0.04);
+    }
+
+    /* ── RPS TRIANGLE ───────────────────────────────────────────────────────── */
+    .rps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .rps-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 1.2rem 1rem;
+      text-align: center;
+      border-radius: 1px;
+      transition: border-color 0.15s;
+    }
+    .rps-card:hover { border-color: var(--gold-dim); }
+
+    .rps-emoji { font-size: 2rem; margin-bottom: 0.4rem; }
+
+    .rps-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.3rem;
+    }
+
+    .rps-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 0.6rem;
+    }
+
+    .rps-beats {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #4caf7d;
+      border: 1px solid #1a4a2a;
+      background: rgba(30,80,40,0.2);
+      padding: 0.2rem 0.5rem;
+      display: inline-block;
+      margin-bottom: 0.3rem;
+    }
+
+    .rps-loses {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #cc6666;
+      border: 1px solid #4a1a1a;
+      background: rgba(80,20,20,0.2);
+      padding: 0.2rem 0.5rem;
+      display: inline-block;
+    }
+
+    /* ── DAMAGE TABLE ───────────────────────────────────────────────────────── */
+    .outcome-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.4rem 0;
+      font-size: 0.88rem;
+    }
+
+    .outcome-table th {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 0.8rem;
+      text-align: left;
+      background: var(--bg2);
+    }
+
+    .outcome-table td {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid rgba(201,168,76,0.07);
+      vertical-align: middle;
+    }
+
+    .outcome-table tr:last-child td { border-bottom: none; }
+    .outcome-table tr:hover td { background: rgba(201,168,76,0.03); }
+
+    .dmg-win  { color: #4caf7d; font-family:'Cinzel',serif; font-size:0.75rem; font-weight:600; }
+    .dmg-lose { color: #cc6666; font-family:'Cinzel',serif; font-size:0.75rem; }
+    .dmg-tie  { color: var(--copper); font-family:'Cinzel',serif; font-size:0.75rem; }
+
+    /* ── WEAPON / ARMOR GRIDS ───────────────────────────────────────────────── */
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin: 1.2rem 0;
+    }
+
+    .item-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 0.9rem 1rem;
+      border-radius: 1px;
+    }
+
+    .item-emoji { font-size: 1.4rem; margin-bottom: 0.3rem; }
+
+    .item-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.2rem;
+    }
+
+    .item-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 0.5rem;
+    }
+
+    .item-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.52rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.45rem;
+      border-radius: 1px;
+      border: 1px solid;
+      display: inline-block;
+      margin: 0.1rem 0.1rem 0 0;
+    }
+
+    .tag-strong { color: #4caf7d; border-color: #1a4a2a; background: rgba(30,80,40,0.2); }
+    .tag-weak   { color: #cc6666; border-color: #4a1a1a; background: rgba(80,20,20,0.2); }
+    .tag-special{ color: var(--copper); border-color: #5a3010; background: rgba(90,48,16,0.2); }
+    .tag-stat   { color: var(--text-dim); border-color: var(--border); }
+
+    /* ── GOLD SECTION ───────────────────────────────────────────────────────── */
+    .gold-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.2rem 0;
+      font-size: 0.88rem;
+    }
+    .gold-table th {
+      font-family: 'Cinzel', serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      padding: 0.5rem 0.8rem;
+      text-align: left;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+    }
+    .gold-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid rgba(201,168,76,0.07);
+    }
+    .gold-table tr:last-child td { border-bottom: none; }
+    .gold-amt {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      color: var(--gold);
+    }
+
+    /* ── ARENA EVENTS ───────────────────────────────────────────────────────── */
+    .event-list {
+      list-style: none;
+      margin: 1.2rem 0;
+    }
+    .event-list li {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(201,168,76,0.07);
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      font-size: 0.9rem;
+    }
+    .event-list li:last-child { border-bottom: none; }
+    .event-bullet {
+      color: var(--gold-dim);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    /* ── TIPS ───────────────────────────────────────────────────────────────── */
+    .tip-list {
+      list-style: none;
+      margin: 1.2rem 0;
+      counter-reset: tips;
+    }
+    .tip-list li {
+      counter-increment: tips;
+      padding: 0.8rem 0 0.8rem 3rem;
+      border-bottom: 1px solid rgba(201,168,76,0.07);
+      position: relative;
+      font-size: 0.9rem;
+    }
+    .tip-list li:last-child { border-bottom: none; }
+    .tip-list li::before {
+      content: counter(tips);
+      position: absolute;
+      left: 0;
+      top: 0.8rem;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 0.9rem;
+      color: var(--gold-dim);
+      width: 2rem;
+      text-align: center;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────────────────────── */
+    .codex-footer {
+      text-align: center;
+      padding: 2rem 0 0;
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+    .codex-footer::before {
+      content: '⚔';
+      position: absolute;
+      top: -0.7rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg);
+      padding: 0 0.8rem;
+      color: var(--gold-dim);
+    }
+    .codex-footer p {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      opacity: 0.5;
+    }
+
+    /* ── SCROLL REVEAL ──────────────────────────────────────────────────────── */
+    .section {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .rps-grid     { grid-template-columns: 1fr; }
+      .item-grid    { grid-template-columns: 1fr; }
+      .toc-list     { grid-template-columns: 1fr; }
+      .hero-title   { font-size: 1.8rem; }
+      .outcome-table { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <a class="back-link" href="index.html">← Return to the Arena</a>
+    <div class="hero-eyebrow">The Official Codex</div>
+    <h1 class="hero-title">Gladiator Gauntlet</h1>
+    <div class="hero-sub">Rules · Weapons · Strategy · Rewards</div>
+    <p class="hero-desc">Everything you need to enter the arena, outlast your opponent, and claim glory.</p>
+  </div>
+
+  <!-- ── TABLE OF CONTENTS ── -->
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ul class="toc-list">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#rps">Hit, Block & Dodge</a></li>
+      <li><a href="#damage">Damage & Outcomes</a></li>
+      <li><a href="#weapons">Weapons</a></li>
+      <li><a href="#armor">Armor</a></li>
+      <li><a href="#events">Arena Events</a></li>
+      <li><a href="#gold">Gold & Rewards</a></li>
+      <li><a href="#shop">The Shop</a></li>
+      <li><a href="#tips">Gladiator's Tips</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── OVERVIEW ── -->
+  <section class="section" id="overview">
+    <div class="section-header">
+      <div class="section-icon">⚔️</div>
+      <div class="section-title">Overview</div>
+      <div class="section-num">I</div>
+    </div>
+    <p>Gladiator Gauntlet is a two-player battle game of psychology, prediction, and combat. Two gladiators enter the arena. Only one leaves.</p>
+    <p>Each round, both players <strong>simultaneously</strong> choose one of three moves — <strong>Hit</strong>, <strong>Block</strong>, or <strong>Dodge</strong>. Neither player knows what the other has chosen until both have committed. The outcome of that choice, combined with your weapon and armor, determines how much damage you deal and receive.</p>
+    <p>There is no round limit. The fight continues until one gladiator's HP reaches zero. The last one standing wins.</p>
+    <div class="callout">
+      <strong>The core loop:</strong> Choose your move → Both choices are revealed → Damage is calculated → Repeat until death.
+    </div>
+  </section>
+
+  <!-- ── RPS ── -->
+  <section class="section" id="rps">
+    <div class="section-header">
+      <div class="section-icon">🛡️</div>
+      <div class="section-title">Hit, Block & Dodge</div>
+      <div class="section-num">II</div>
+    </div>
+    <p>Your three moves form a triangle — each beats one and loses to one. This is the heart of every round. Read your opponent, predict their move, and counter.</p>
+
+    <div class="rps-grid">
+      <div class="rps-card">
+        <div class="rps-emoji">⚔️</div>
+        <div class="rps-name">Hit</div>
+        <div class="rps-desc">Commit to a full attack. High risk, high reward.</div>
+        <div class="rps-beats">✓ Beats Dodge</div><br>
+        <div class="rps-loses">✗ Loses to Block</div>
+      </div>
+      <div class="rps-card">
+        <div class="rps-emoji">🛡️</div>
+        <div class="rps-name">Block</div>
+        <div class="rps-desc">Brace for impact. Neutralise an incoming strike.</div>
+        <div class="rps-beats">✓ Beats Hit</div><br>
+        <div class="rps-loses">✗ Loses to Dodge</div>
+      </div>
+      <div class="rps-card">
+        <div class="rps-emoji">💨</div>
+        <div class="rps-name">Dodge</div>
+        <div class="rps-desc">Sidestep and counter. Punish a defensive opponent.</div>
+        <div class="rps-beats">✓ Beats Block</div><br>
+        <div class="rps-loses">✗ Loses to Hit</div>
+      </div>
+    </div>
+
+    <p>Both choices are hidden until both players have submitted. Once both picks are in, the results are revealed and the round resolves automatically.</p>
+  </section>
+
+  <!-- ── DAMAGE ── -->
+  <section class="section" id="damage">
+    <div class="section-header">
+      <div class="section-icon">💥</div>
+      <div class="section-title">Damage & Outcomes</div>
+      <div class="section-num">III</div>
+    </div>
+    <p>Winning or losing the move matchup determines a <strong>damage multiplier</strong> applied to both fighters' attacks. Neither gladiator is completely safe — even the loser deals reduced damage.</p>
+
+    <table class="outcome-table">
+      <thead>
+        <tr>
+          <th>Matchup Result</th>
+          <th>Your Damage</th>
+          <th>Opponent's Damage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>You Win</strong> — your move counters theirs</td>
+          <td><span class="dmg-win">100% (full)</span></td>
+          <td><span class="dmg-lose">50% (glancing)</span></td>
+        </tr>
+        <tr>
+          <td><strong>You Lose</strong> — their move counters yours</td>
+          <td><span class="dmg-lose">50% (glancing)</span></td>
+          <td><span class="dmg-win">100% (full)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Tie</strong> — same move chosen</td>
+          <td><span class="dmg-tie">50% (both reduced)</span></td>
+          <td><span class="dmg-tie">50% (both reduced)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>Damage is also affected by your <strong>weapon</strong> (base damage range, matchup bonuses), your <strong>armor</strong> (damage reduction), and that round's <strong>arena event</strong>. Critical hits, when they occur, double your raw damage before the multiplier is applied.</p>
+
+    <div class="callout callout-danger">
+      Even a losing round still deals 50% damage. A string of losses will drain your HP quickly — there is no safe move to spam.
+    </div>
+  </section>
+
+  <!-- ── WEAPONS ── -->
+  <section class="section" id="weapons">
+    <div class="section-header">
+      <div class="section-icon">🗡️</div>
+      <div class="section-title">Weapons</div>
+      <div class="section-num">IV</div>
+    </div>
+    <p>Your weapon is chosen before the battle begins and cannot be changed mid-fight. Each weapon has a base damage range, weapons it excels against, and weapons it struggles against. Choose with your opponent in mind.</p>
+
+    <div class="item-grid">
+      <div class="item-card">
+        <div class="item-emoji">⚔️</div>
+        <div class="item-name">Greatsword</div>
+        <div class="item-desc">Massive two-handed blade. Devastating raw power.</div>
+        <span class="item-tag tag-strong">▲ Spear, Flail</span>
+        <span class="item-tag tag-weak">▼ Dual Blades, Mace & Shield</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🛡️</div>
+        <div class="item-name">Mace & Shield</div>
+        <div class="item-desc">One-handed mace with heavy shield. Has a 25% chance to block attacks entirely.</div>
+        <span class="item-tag tag-strong">▲ Greatsword, War Axe</span>
+        <span class="item-tag tag-weak">▼ Spear, Crossbow</span>
+        <span class="item-tag tag-special">★ 25% block chance</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🗡️</div>
+        <div class="item-name">War Spear</div>
+        <div class="item-desc">Long reach, keep enemies at bay. Consistent and reliable.</div>
+        <span class="item-tag tag-strong">▲ Mace & Shield, Dual Blades</span>
+        <span class="item-tag tag-weak">▼ Greatsword, War Axe</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🔪</div>
+        <div class="item-name">Dual Blades</div>
+        <div class="item-desc">Twin daggers — fast, relentless, and hard to predict.</div>
+        <span class="item-tag tag-strong">▲ Greatsword, Crossbow</span>
+        <span class="item-tag tag-weak">▼ Spear, Morningstar</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🪓</div>
+        <div class="item-name">War Axe</div>
+        <div class="item-desc">Heavy axe with brutal momentum. Punishes armored foes.</div>
+        <span class="item-tag tag-strong">▲ Spear, Flail</span>
+        <span class="item-tag tag-weak">▼ Mace & Shield, Dual Blades</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">💥</div>
+        <div class="item-name">Morningstar</div>
+        <div class="item-desc">Spiked flail that pierces armor, ignoring 20% of your opponent's defense.</div>
+        <span class="item-tag tag-strong">▲ Dual Blades, Mace & Shield</span>
+        <span class="item-tag tag-weak">▼ Greatsword, War Axe</span>
+        <span class="item-tag tag-special">★ 20% armor pierce</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🏹</div>
+        <div class="item-name">Crossbow</div>
+        <div class="item-desc">Ranged bolts — hard to dodge, consistent at distance.</div>
+        <span class="item-tag tag-strong">▲ Mace & Shield, Morningstar</span>
+        <span class="item-tag tag-weak">▼ Dual Blades, Chain Flail</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">⛓️</div>
+        <div class="item-name">Chain Flail</div>
+        <div class="item-desc">Unpredictable and shield-breaking — the Mace & Shield's block chance doesn't work against this.</div>
+        <span class="item-tag tag-strong">▲ Crossbow, Dual Blades</span>
+        <span class="item-tag tag-weak">▼ Greatsword, Spear</span>
+        <span class="item-tag tag-special">★ Ignores shields</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      When your weapon is <strong>strong against</strong> your opponent's, your base damage range increases by 30%. When it is <strong>weak against</strong> theirs, it decreases by 30%. Weapon choice matters — especially if you know who you're fighting.
+    </div>
+  </section>
+
+  <!-- ── ARMOR ── -->
+  <section class="section" id="armor">
+    <div class="section-header">
+      <div class="section-icon">🔩</div>
+      <div class="section-title">Armor</div>
+      <div class="section-num">V</div>
+    </div>
+    <p>Armor determines your starting HP and how much incoming damage is reduced. Choose between durability and fragility — each has its place depending on your playstyle.</p>
+
+    <div class="item-grid">
+      <div class="item-card">
+        <div class="item-emoji">🔩</div>
+        <div class="item-name">Heavy Plate</div>
+        <div class="item-desc">Maximum protection for those who intend to outlast, not outpace.</div>
+        <span class="item-tag tag-stat">160 HP</span>
+        <span class="item-tag tag-stat">28% damage reduction</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🔗</div>
+        <div class="item-name">Chainmail</div>
+        <div class="item-desc">The balanced gladiator's choice. Solid protection without sacrificing mobility.</div>
+        <span class="item-tag tag-stat">120 HP</span>
+        <span class="item-tag tag-stat">15% damage reduction</span>
+      </div>
+      <div class="item-card">
+        <div class="item-emoji">🦺</div>
+        <div class="item-name">Leather</div>
+        <div class="item-desc">Minimal protection — glass cannon territory. You hit hard but won't take many hits.</div>
+        <span class="item-tag tag-stat">85 HP</span>
+        <span class="item-tag tag-stat">5% damage reduction</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── EVENTS ── -->
+  <section class="section" id="events">
+    <div class="section-header">
+      <div class="section-icon">🏛️</div>
+      <div class="section-title">Arena Events</div>
+      <div class="section-num">VI</div>
+    </div>
+    <p>At the start of every round, the arena itself intervenes. A random event is drawn and affects the fight in some way — sometimes helping you, sometimes hindering you, sometimes both. Events cycle through a fixed sequence, so attentive gladiators can anticipate what's coming.</p>
+
+    <ul class="event-list">
+      <li><span class="event-bullet">⚔</span><span><strong>Sand in the Eyes</strong> — The crowd hurls sand. Visibility drops. No mechanical effect, but the crowd grows restless.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Arena Fire</strong> — A torch falls. Both fighters take 5 direct damage before the round begins. No armor reduction applies.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Energized</strong> — The crowd roars. Both fighters deal 20% bonus damage this round.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Hidden Dagger</strong> — A slave tosses a blade into the pit. One random fighter snatches it and gains +8 bonus damage.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Call for Blood</strong> — The announcer demands carnage. Critical hit chance is doubled this round (base 40% → if a critical is possible).</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Passing Shadow</strong> — A cloud blocks the sun. Atmospheric only — no mechanical effect.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Emperor Rises</strong> — The Emperor himself watches. Both fighters deal 10% bonus damage from the pressure to perform.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Fallen Chains</strong> — Chains rattle underfoot. Movement is hindered. Both fighters deal 15% less damage this round.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Medicus</strong> — The arena physician rushes in and grants one random fighter +15 HP. Luck of the draw.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Beast at the Gate</strong> — Something stirs beyond the gate. Fear is palpable — atmospheric only.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Rain</strong> — The colosseum gets wet. Stone becomes slick — atmospheric only.</span></li>
+      <li><span class="event-bullet">⚔</span><span><strong>Execution Horn</strong> — The crowd demands death. One random fighter hears the call and gains +12 bonus damage.</span></li>
+    </ul>
+  </section>
+
+  <!-- ── GOLD ── -->
+  <section class="section" id="gold">
+    <div class="section-header">
+      <div class="section-icon">⚙</div>
+      <div class="section-title">Gold & Rewards</div>
+      <div class="section-num">VII</div>
+    </div>
+    <p>Gold is earned after every battle, win or lose. It accumulates across sessions and is spent in the Shop on cosmetic upgrades for your gladiator. You can never lose gold already earned.</p>
+
+    <table class="gold-table">
+      <thead>
+        <tr>
+          <th>Condition</th>
+          <th>Gold Earned</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Win a match</td><td><span class="gold-amt">⚙ +50</span></td></tr>
+        <tr><td>Draw (both reach 0 HP simultaneously)</td><td><span class="gold-amt">⚙ +20</span></td></tr>
+        <tr><td>Lose a match</td><td><span class="gold-amt">⚙ +10</span></td></tr>
+        <tr><td>Each critical hit you land</td><td><span class="gold-amt">⚙ +5</span></td></tr>
+        <tr><td>Win with less than 20% HP remaining</td><td><span class="gold-amt">⚙ +25 bonus</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      The <strong>Last Stand Bonus</strong> (+25 gold) rewards grinding out a win from the brink. If you're clinging to life and you pull through, the crowd — and your wallet — will remember it.
+    </div>
+  </section>
+
+  <!-- ── SHOP ── -->
+  <section class="section" id="shop">
+    <div class="section-header">
+      <div class="section-icon">🏪</div>
+      <div class="section-title">The Shop</div>
+      <div class="section-num">VIII</div>
+    </div>
+    <p>Gold is spent in the <strong>Armory Shop</strong>, accessible from the main screen. Items are purely cosmetic — they make you look distinguished, not deadlier. Once purchased, most items can be equipped or unequipped freely at any time.</p>
+
+    <div class="item-grid">
+      <div class="item-card">
+        <div class="item-name">Name Colors</div>
+        <div class="item-desc">Tint your gladiator name in gold, blood red, frost blue, shadow grey, emerald green, or royal purple. Visible in the leaderboard and auth bar.</div>
+        <span class="item-tag tag-stat">⚙ 80 – 120</span>
+      </div>
+      <div class="item-card">
+        <div class="item-name">Name Symbols</div>
+        <div class="item-desc">A symbol prefix before your name — ☠ ⚡ 🔥 👑 🐉 ⚜. Only one can be active at a time, and you can swap between owned symbols for free.</div>
+        <span class="item-tag tag-stat">⚙ 60 – 150</span>
+      </div>
+      <div class="item-card">
+        <div class="item-name">Name Change</div>
+        <div class="item-desc">A consumable that lets you permanently change your gladiator name. This is the only way to change your name after initial setup.</div>
+        <span class="item-tag tag-stat">⚙ 50</span>
+      </div>
+      <div class="item-card">
+        <div class="item-name">Coming Soon</div>
+        <div class="item-desc">Profile borders, arena taunts, and victory trails are in development and will be available in future updates.</div>
+        <span class="item-tag tag-stat">⚙ ???</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TIPS ── -->
+  <section class="section" id="tips">
+    <div class="section-header">
+      <div class="section-icon">👑</div>
+      <div class="section-title">Gladiator's Tips</div>
+      <div class="section-num">IX</div>
+    </div>
+    <p>Raw damage only gets you so far. The arena rewards those who think ahead.</p>
+
+    <ol class="tip-list">
+      <li><strong>Read your opponent's patterns.</strong> Most players fall into habits — three Hits in a row, or always Blocking when low on HP. Recognise the pattern and counter it.</li>
+      <li><strong>Dodge punishes turtles.</strong> If your opponent is low on HP and likely to Block, Dodge is your best play. It bypasses their defence and hits them where it hurts.</li>
+      <li><strong>Ties drain both fighters.</strong> If you're ahead on HP, a tie works in your favour — your opponent loses the same amount of HP you do, and they have less to spare.</li>
+      <li><strong>Know the event cycle.</strong> Arena events follow a fixed order. If you remember that fire damage is coming next round, you might play more conservatively this one.</li>
+      <li><strong>Weapon matchups are set before the fight.</strong> Once you know your opponent's weapon, you know exactly how much your damage is boosted or penalised. Factor that into your aggression.</li>
+      <li><strong>Heavy Plate isn't slow — it's durable.</strong> Don't discount the 28% damage reduction. A Heavy Plate gladiator absorbs significantly more punishment over a long fight.</li>
+      <li><strong>The Last Stand bonus is worth chasing.</strong> If you're below 20% HP and still winning, don't concede — the +25 gold reward makes it worthwhile to see it through.</li>
+      <li><strong>Don't always Hit.</strong> It seems counterintuitive, but a predictable attacker is a dead attacker. Blend in Blocks and Dodges to keep your opponent guessing.</li>
+    </ol>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="codex-footer">
+    <p>Gladiator Gauntlet · The Official Codex · May the stronger mind prevail</p>
+  </footer>
+
+</div>
+
+<script>
+  // Scroll reveal for sections
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll(".section").forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
