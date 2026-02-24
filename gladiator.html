@@ -12,7 +12,7 @@
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
     import {
       getAuth, signInAnonymously, onAuthStateChanged,
-      GoogleAuthProvider, linkWithPopup, signInWithPopup, unlink
+      GoogleAuthProvider, linkWithPopup, unlink
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     /* ── FIREBASE ─────────────────────────────────────────────────────────── */
@@ -29,7 +29,7 @@
     const db   = getDatabase(app);
     const auth = getAuth(app);
 
-    /* ── CONSTANTS ────────────────────────────────────────────────────────── */
+    /* ── GAME CONSTANTS ───────────────────────────────────────────────────── */
     const WEAPONS = {
       greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[18,28], strongAgainst:["spear","flail"],           weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
       maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[10,18], strongAgainst:["greatsword","warAxe"],      weakAgainst:["spear","crossbow"],        flavor:"bludgeons",  blockChance:0.25 },
@@ -65,14 +65,47 @@
       block: { label:"Block", emoji:"🛡️" },
       dodge: { label:"Dodge", emoji:"💨" },
     };
-
-    // Gold rewards
     const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25 };
+
+    /* ── SHOP CATALOGUE ───────────────────────────────────────────────────── */
+    // Each item: id, category, name, desc, cost, value (what gets saved)
+    const SHOP_ITEMS = [
+      // ── Name Colors
+      { id:"color_gold",    cat:"color",  name:"Golden Name",    desc:"Your name glows in arena gold.",      cost:80,  value:"#c9a84c" },
+      { id:"color_blood",   cat:"color",  name:"Blood Name",     desc:"A crimson name that demands fear.",   cost:80,  value:"#cc2222" },
+      { id:"color_ice",     cat:"color",  name:"Frost Name",     desc:"Cold blue — ice in your veins.",      cost:80,  value:"#6ab4d0" },
+      { id:"color_shadow",  cat:"color",  name:"Shadow Name",    desc:"Dark grey, barely visible.",          cost:80,  value:"#888888" },
+      { id:"color_emerald", cat:"color",  name:"Emerald Name",   desc:"Forest green champion.",              cost:80,  value:"#4caf7d" },
+      { id:"color_purple",  cat:"color",  name:"Royal Name",     desc:"Purple — worn only by champions.",    cost:120, value:"#b06cd0" },
+      // ── Symbols / Titles
+      { id:"sym_skull",     cat:"symbol", name:"Skull Mark",     desc:"☠ precedes your name in battle.",    cost:60,  value:"☠" },
+      { id:"sym_lightning", cat:"symbol", name:"Lightning Mark", desc:"⚡ — strike fast, strike first.",    cost:60,  value:"⚡" },
+      { id:"sym_fire",      cat:"symbol", name:"Flame Mark",     desc:"🔥 — the crowd calls your name.",    cost:60,  value:"🔥" },
+      { id:"sym_crown",     cat:"symbol", name:"Crown Mark",     desc:"👑 — worn only by true kings.",      cost:100, value:"👑" },
+      { id:"sym_dragon",    cat:"symbol", name:"Dragon Mark",    desc:"🐉 — ancient power at your side.",   cost:150, value:"🐉" },
+      { id:"sym_fleur",     cat:"symbol", name:"Fleur Mark",     desc:"⚜ — noble blood, iron will.",       cost:100, value:"⚜" },
+      // ── Name Change (consumable — always purchasable)
+      { id:"name_change",   cat:"rename", name:"Name Change",    desc:"Change your gladiator name permanently.", cost:50, value:null },
+      // ── Coming Soon
+      { id:"cs_border",     cat:"soon",   name:"Profile Border", desc:"A decorative border in the leaderboard.", cost:200, value:null },
+      { id:"cs_taunt",      cat:"soon",   name:"Arena Taunt",    desc:"Send a taunt to your opponent each round.", cost:200, value:null },
+      { id:"cs_trail",      cat:"soon",   name:"Victory Trail",  desc:"Sparks trail your name on the leaderboard.", cost:300, value:null },
+    ];
+
+    /* ── PLAYER PROFILE (in-memory cache) ────────────────────────────────── */
+    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, owned:[], activeColor:null, activeSymbol:null, linked:false };
+
+    function formatDisplayName(name, profile) {
+      const sym   = profile?.activeSymbol || null;
+      const color = profile?.activeColor  || null;
+      const sym_str = sym ? `${sym} ` : "";
+      if (color) return `${sym_str}<span style="color:${color}">${name}</span>`;
+      return `${sym_str}${name}`;
+    }
 
     /* ── HELPERS ──────────────────────────────────────────────────────────── */
     const rand  = (mn,mx) => Math.floor(Math.random()*(mx-mn+1))+mn;
     const mkLog = (type,who,weapon,armor,text) => ({type,who,weapon,armor,text});
-
     function rpsResult(a,b){ return a===b?"tie":BEATS[a]===b?"a":"b"; }
 
     function calcDmg(attacker,defender,effect){
@@ -97,167 +130,289 @@
       let p1={...state.p1}, p2={...state.p2};
       const a1=state.p1action, a2=state.p2action;
       let p1Crits=0, p2Crits=0;
-
       logs.push({type:"event",text:event.text});
-      if(effect==="fire"){p1.hp-=event.damage;p2.hp-=event.damage;logs.push({type:"env",text:`Both fighters take ${event.damage} fire damage from the burning floor.`});}
+      if(effect==="fire"){p1.hp-=event.damage;p2.hp-=event.damage;logs.push({type:"env",text:`Both fighters take ${event.damage} fire damage.`});}
       const daggerLucky=Math.random()<0.5?"p1":"p2";
       const executeLucky=Math.random()<0.5?"p1":"p2";
       if(effect==="heal"){const lucky=Math.random()<0.5?"p1":"p2",amt=event.amount;if(lucky==="p1"){p1.hp+=amt;logs.push({type:"env",text:`${p1.name} receives emergency aid! +${amt} HP.`});}else{p2.hp+=amt;logs.push({type:"env",text:`${p2.name} receives emergency aid! +${amt} HP.`});}}
-      if(effect==="dagger") logs.push({type:"env",text:`${daggerLucky==="p1"?p1.name:p2.name} snatches the dagger — bonus damage this round.`});
-      if(effect==="execute")logs.push({type:"env",text:`${executeLucky==="p1"?p1.name:p2.name} hears the crowd's hunger and readies a savage blow.`});
-
+      if(effect==="dagger") logs.push({type:"env",text:`${daggerLucky==="p1"?p1.name:p2.name} snatches the dagger.`});
+      if(effect==="execute")logs.push({type:"env",text:`${executeLucky==="p1"?p1.name:p2.name} readies a savage blow.`});
       const result=rpsResult(a1,a2);
       const am1=ACTION_META[a1], am2=ACTION_META[a2];
       logs.push({type:"reveal",text:`${p1.name} chose ${am1.emoji} ${am1.label} — ${p2.name} chose ${am2.emoji} ${am2.label}.`});
       if(result==="tie")logs.push({type:"env",text:`Both fighters clash simultaneously — neither gains the upper hand!`});
-      else if(result==="a")logs.push({type:"env",text:`${am1.label} overcomes ${am2.label}! ${p1.name} has the advantage this round.`});
-      else logs.push({type:"env",text:`${am2.label} overcomes ${am1.label}! ${p2.name} has the advantage this round.`});
-
-      // P1→P2
+      else if(result==="a")logs.push({type:"env",text:`${am1.label} overcomes ${am2.label}! ${p1.name} has the advantage.`});
+      else logs.push({type:"env",text:`${am2.label} overcomes ${am1.label}! ${p2.name} has the advantage.`});
       {let {dmg,crit}=calcDmg(p1,p2,effect);
        if(effect==="dagger"&&daggerLucky==="p1")dmg+=event.bonus;
        if(effect==="execute"&&executeLucky==="p1")dmg+=event.bonus;
        const mult=result==="tie"?0.5:result==="a"?1.0:0.5;
        const total=Math.max(1,Math.floor(dmg*mult));
-       p2.hp-=total; if(crit)p1Crits++;
+       p2.hp-=total;if(crit)p1Crits++;
        const lt=result==="b"?"weak":crit?"crit":"hit";
        const q=result==="b"?" (glancing blow)":crit?" — a devastating critical strike!":".";
        logs.push(mkLog(lt,p1.name,WEAPONS[p1.weapon].name,ARMORS[p1.armor].name,`${p1.name} ${WEAPONS[p1.weapon].flavor} ${p2.name} for ${total} damage${q}`));}
-
-      // P2→P1
       {let {dmg,crit}=calcDmg(p2,p1,effect);
        if(effect==="dagger"&&daggerLucky==="p2")dmg+=event.bonus;
        if(effect==="execute"&&executeLucky==="p2")dmg+=event.bonus;
        const mult=result==="tie"?0.5:result==="b"?1.0:0.5;
        const total=Math.max(1,Math.floor(dmg*mult));
-       p1.hp-=total; if(crit)p2Crits++;
+       p1.hp-=total;if(crit)p2Crits++;
        const lt=result==="a"?"weak":crit?"crit":"hit";
        const q=result==="a"?" (glancing blow)":crit?" — a devastating critical strike!":".";
        logs.push(mkLog(lt,p2.name,WEAPONS[p2.weapon].name,ARMORS[p2.armor].name,`${p2.name} ${WEAPONS[p2.weapon].flavor} ${p1.name} for ${total} damage${q}`));}
-
       p1.hp=Math.max(0,Math.min(p1.hp,ARMORS[p1.armor].hp));
       p2.hp=Math.max(0,Math.min(p2.hp,ARMORS[p2.armor].hp));
       const gameOver=p1.hp<=0||p2.hp<=0;
       let winner=null;
       if(gameOver){if(p1.hp<=0&&p2.hp<=0)winner="draw";else if(p1.hp<=0)winner="p2";else winner="p1";}
-      return {p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits};
+      return{p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits};
     }
 
-    /* ── AUTH STATE ───────────────────────────────────────────────────────── */
-    let currentUser = null;
+    /* ── AUTH ─────────────────────────────────────────────────────────────── */
+    let currentUser=null;
+    function isLinked(u){ return u&&u.providerData&&u.providerData.some(p=>p.providerId==="google.com"); }
 
-    function isLinked(user) {
-      return user && user.providerData && user.providerData.some(p=>p.providerId==="google.com");
+    function updateAuthUI(user){
+      const bar=$("auth-bar"); if(!user){bar.innerHTML="";return;}
+      const linked=isLinked(user);
+      const goldDisplay=`<span class="auth-gold">⚙ ${playerProfile.gold||0}</span>`;
+      bar.innerHTML=linked
+        ?`${goldDisplay}<span class="auth-name">${formatDisplayName(playerProfile.name||user.displayName||"Gladiator",playerProfile)}</span><span class="auth-badge linked">Google Linked</span><button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
+        :`${goldDisplay}<span class="auth-name">${formatDisplayName(playerProfile.name||"Anonymous Gladiator",playerProfile)}</span><button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google</button>`;
+      if(linked) $("btn-unlink-google").onclick=unlinkGoogle;
+      else       $("btn-link-google").onclick=linkGoogle;
     }
 
-    function updateAuthUI(user) {
-      const bar = $("auth-bar");
-      if (!user) { bar.innerHTML=""; return; }
-      const linked = isLinked(user);
-      bar.innerHTML = linked
-        ? `<span class="auth-name">⚔ ${user.displayName||"Gladiator"}</span>
-           <span class="auth-badge linked">Google Linked</span>
-           <button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
-        : `<span class="auth-name">⚔ Anonymous Gladiator</span>
-           <button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google Account</button>`;
-      if (linked) {
-        $("btn-unlink-google").onclick = unlinkGoogle;
-      } else {
-        $("btn-link-google").onclick = linkGoogle;
-      }
-    }
-
-    async function unlinkGoogle() {
-      if (!confirm("Unlink your Google account? Your stats will remain but won't sync across devices until you re-link.")) return;
-      try {
-        await unlink(currentUser, "google.com");
-        await update(ref(db,`players/${currentUser.uid}`), { linked: false });
-        updateAuthUI(currentUser);
-        showToast("Google account unlinked. Your stats are still saved anonymously.");
-      } catch(e) {
-        showToast("Could not unlink Google account. Try again.", true);
-      }
-    }
-
-    async function linkGoogle() {
-      try {
-        const provider = new GoogleAuthProvider();
-        await linkWithPopup(currentUser, provider);
-        // Update display name in player record
-        await savePlayerName(currentUser.uid, currentUser.displayName);
+    async function linkGoogle(){
+      try{
+        const provider=new GoogleAuthProvider();
+        await linkWithPopup(currentUser,provider);
+        await update(ref(db,`players/${currentUser.uid}`),{linked:true});
+        playerProfile.linked=true;
         updateAuthUI(currentUser);
         showToast("Google account linked! Your stats are now permanent.");
-      } catch(e) {
-        if (e.code==="auth/credential-already-in-use") {
-          showToast("That Google account is already linked to another gladiator.", true);
-        } else {
-          showToast("Could not link Google account. Try again.", true);
-        }
+      }catch(e){
+        if(e.code==="auth/credential-already-in-use") showToast("That Google account is already linked to another gladiator.",true);
+        else showToast("Could not link Google account. Try again.",true);
       }
     }
 
-    /* ── PLAYER STATS ─────────────────────────────────────────────────────── */
-    async function savePlayerName(uid, name) {
-      const pRef = ref(db,`players/${uid}`);
-      const snap = await get(pRef);
-      if (!snap.exists()) {
-        await set(pRef,{name, wins:0, losses:0, draws:0, gold:0, linked:false});
+    async function unlinkGoogle(){
+      if(!confirm("Unlink your Google account? Your stats remain but won't sync across devices until re-linked."))return;
+      try{
+        await unlink(currentUser,"google.com");
+        await update(ref(db,`players/${currentUser.uid}`),{linked:false});
+        playerProfile.linked=false;
+        updateAuthUI(currentUser);
+        showToast("Google account unlinked.");
+      }catch(e){ showToast("Could not unlink Google account.",true); }
+    }
+
+    /* ── PLAYER DATA ──────────────────────────────────────────────────────── */
+    async function loadPlayerProfile(uid){
+      const snap=await get(ref(db,`players/${uid}`));
+      if(snap.exists()){
+        playerProfile={...playerProfile,...snap.val()};
+        if(!playerProfile.owned) playerProfile.owned=[];
+      }
+    }
+
+    async function savePlayerProfile(uid, updates){
+      Object.assign(playerProfile,updates);
+      await update(ref(db,`players/${uid}`),updates);
+    }
+
+    async function ensurePlayerExists(uid, name){
+      const pRef=ref(db,`players/${uid}`);
+      const snap=await get(pRef);
+      if(!snap.exists()){
+        const initial={name,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null,linked:false};
+        await set(pRef,initial);
+        Object.assign(playerProfile,initial);
       } else {
         await update(pRef,{name});
+        playerProfile.name=name;
       }
     }
 
-    async function recordResult(uid, gladName, outcome, crits, finalHp, maxHp) {
-      const pRef = ref(db,`players/${uid}`);
-      // Ensure record exists
-      const snap = await get(pRef);
-      if (!snap.exists()) await set(pRef,{name:gladName,wins:0,losses:0,draws:0,gold:0});
-
-      let goldEarned = 0;
-      if      (outcome==="win")  goldEarned = GOLD.win;
-      else if (outcome==="loss") goldEarned = GOLD.loss;
-      else                       goldEarned = GOLD.draw;
-      goldEarned += crits * GOLD.crit;
-      // Low HP survival bonus — if you won with less than 20% HP
-      if (outcome==="win" && finalHp/maxHp < 0.2) goldEarned += GOLD.lowHpBonus;
-
-      await runTransaction(pRef, current => {
-        if (!current) current={name:gladName,wins:0,losses:0,draws:0,gold:0};
-        current.name   = gladName;
-        current.gold   = (current.gold||0) + goldEarned;
-        if      (outcome==="win")  current.wins   = (current.wins||0)+1;
-        else if (outcome==="loss") current.losses = (current.losses||0)+1;
-        else                       current.draws  = (current.draws||0)+1;
-        current.linked = isLinked(currentUser);
+    async function recordResult(uid,gladName,outcome,crits,finalHp,maxHp){
+      const pRef=ref(db,`players/${uid}`);
+      let goldEarned=outcome==="win"?GOLD.win:outcome==="loss"?GOLD.loss:GOLD.draw;
+      goldEarned+=crits*GOLD.crit;
+      if(outcome==="win"&&finalHp/maxHp<0.2)goldEarned+=GOLD.lowHpBonus;
+      await runTransaction(pRef,current=>{
+        if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null};
+        current.gold=(current.gold||0)+goldEarned;
+        if(outcome==="win")current.wins=(current.wins||0)+1;
+        else if(outcome==="loss")current.losses=(current.losses||0)+1;
+        else current.draws=(current.draws||0)+1;
         return current;
       });
+      playerProfile.gold=(playerProfile.gold||0)+goldEarned;
+      if(outcome==="win")playerProfile.wins=(playerProfile.wins||0)+1;
+      else if(outcome==="loss")playerProfile.losses=(playerProfile.losses||0)+1;
+      else playerProfile.draws=(playerProfile.draws||0)+1;
       return goldEarned;
     }
 
+    /* ── SHOP ─────────────────────────────────────────────────────────────── */
+    function buildShop(){
+      const wrap=$("shop-items"); wrap.innerHTML="";
+      const owned=playerProfile.owned||[];
+      const gold=playerProfile.gold||0;
+
+      const cats=[
+        {key:"color",  label:"Name Colors"},
+        {key:"symbol", label:"Name Symbols"},
+        {key:"rename", label:"Name Change"},
+        {key:"soon",   label:"Coming Soon"},
+      ];
+
+      cats.forEach(cat=>{
+        const items=SHOP_ITEMS.filter(i=>i.cat===cat.key);
+        const header=document.createElement("div");
+        header.className="shop-cat-header";
+        header.textContent=cat.label;
+        wrap.appendChild(header);
+
+        items.forEach(item=>{
+          const isOwned=owned.includes(item.id);
+          const isSoon=item.cat==="soon";
+          const isRename=item.cat==="rename";
+          const isActiveColor=playerProfile.activeColor===item.value&&item.cat==="color";
+          const isActiveSymbol=playerProfile.activeSymbol===item.value&&item.cat==="symbol";
+          const isActive=isActiveColor||isActiveSymbol;
+          const canAfford=gold>=item.cost;
+
+          const card=document.createElement("div");
+          card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}`;
+
+          let badge="";
+          if(isSoon)          badge=`<span class="shop-badge soon-badge">Soon</span>`;
+          else if(isActive)   badge=`<span class="shop-badge active-badge">Active</span>`;
+          else if(isOwned&&!isRename) badge=`<span class="shop-badge owned-badge">Owned</span>`;
+
+          let preview="";
+          if(item.cat==="color") preview=`<span class="shop-preview" style="color:${item.value}">${playerProfile.name||"Gladiator"}</span>`;
+          if(item.cat==="symbol")preview=`<span class="shop-preview">${item.value} ${playerProfile.name||"Gladiator"}</span>`;
+
+          let btnLabel="";
+          let btnClass="btn shop-btn";
+          if(isSoon)                   {btnLabel="Coming Soon";btnClass+=" disabled";}
+          else if(isActive)            {btnLabel="Deactivate"; btnClass+=" shop-btn-deactivate";}
+          else if(isOwned&&!isRename)  {btnLabel="Equip";      btnClass+=" shop-btn-equip";}
+          else if(!canAfford)          {btnLabel=`⚙ ${item.cost}`;btnClass+=" disabled";}
+          else                         {btnLabel=`Buy ⚙ ${item.cost}`;}
+
+          card.innerHTML=`
+            <div class="shop-item-top">
+              <div>
+                <div class="shop-item-name">${item.name}</div>
+                <div class="shop-item-desc">${item.desc}</div>
+                ${preview}
+              </div>
+              <div>${badge}</div>
+            </div>
+            <button class="${btnClass}" ${isSoon||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
+
+          // Button action
+          if(!isSoon){
+            card.querySelector("button").onclick=async()=>{
+              if(isActive){
+                // Deactivate
+                const updates={};
+                if(item.cat==="color")  {updates.activeColor=null; playerProfile.activeColor=null;}
+                if(item.cat==="symbol") {updates.activeSymbol=null;playerProfile.activeSymbol=null;}
+                await update(ref(db,`players/${currentUser.uid}`),updates);
+                buildShop(); updateAuthUI(currentUser); showToast(`${item.name} deactivated.`);
+              } else if(isOwned&&!isRename){
+                // Equip
+                const updates={};
+                if(item.cat==="color")  {updates.activeColor=item.value; playerProfile.activeColor=item.value;}
+                if(item.cat==="symbol") {updates.activeSymbol=item.value;playerProfile.activeSymbol=item.value;}
+                await update(ref(db,`players/${currentUser.uid}`),updates);
+                buildShop(); updateAuthUI(currentUser); showToast(`${item.name} equipped!`);
+              } else if(canAfford){
+                // Buy
+                if(item.cat==="rename"){
+                  showNameChangeModal(); return;
+                }
+                // Deduct gold, add to owned, equip immediately
+                const newGold=(playerProfile.gold||0)-item.cost;
+                const newOwned=[...(playerProfile.owned||[]),item.id];
+                const updates={gold:newGold, owned:newOwned};
+                if(item.cat==="color")  {updates.activeColor=item.value; playerProfile.activeColor=item.value;}
+                if(item.cat==="symbol") {updates.activeSymbol=item.value;playerProfile.activeSymbol=item.value;}
+                playerProfile.gold=newGold; playerProfile.owned=newOwned;
+                await update(ref(db,`players/${currentUser.uid}`),updates);
+                buildShop(); updateAuthUI(currentUser);
+                showToast(`${item.name} purchased and equipped!`);
+              }
+            };
+          }
+          wrap.appendChild(card);
+        });
+      });
+
+      // Gold display in shop header
+      $("shop-gold-display").textContent=`⚙ ${playerProfile.gold||0} gold`;
+    }
+
+    /* ── NAME CHANGE MODAL ────────────────────────────────────────────────── */
+    function showNameChangeModal(){
+      $("name-change-input").value=playerProfile.name||"";
+      $("modal-name-change").style.display="";
+    }
+
+    async function confirmNameChange(){
+      const newName=$("name-change-input").value.trim();
+      if(!newName){showToast("Name cannot be empty.",true);return;}
+      if(newName.length>24){showToast("Name must be 24 characters or fewer.",true);return;}
+      const cost=SHOP_ITEMS.find(i=>i.id==="name_change").cost;
+      if((playerProfile.gold||0)<cost){showToast("Not enough gold.",true);return;}
+      const newGold=(playerProfile.gold||0)-cost;
+      playerProfile.gold=newGold; playerProfile.name=newName;
+      await update(ref(db,`players/${currentUser.uid}`),{name:newName,gold:newGold});
+      // Also update setup name field
+      $("gladiator-name").value=newName; sel.name=newName; checkReady();
+      $("modal-name-change").style.display="none";
+      buildShop(); updateAuthUI(currentUser);
+      showToast(`Name changed to "${newName}"!`);
+    }
+
+    /* ── NAME PROMPT MODAL (first visit) ──────────────────────────────────── */
+    function showNamePrompt(){
+      $("modal-name-prompt").style.display="";
+      $("name-prompt-input").focus();
+    }
+
+    async function confirmNamePrompt(){
+      const name=$("name-prompt-input").value.trim();
+      if(!name){showToast("Please enter a name to continue.",true);return;}
+      if(name.length>24){showToast("Name must be 24 characters or fewer.",true);return;}
+      await ensurePlayerExists(currentUser.uid,name);
+      $("gladiator-name").value=name; sel.name=name; checkReady();
+      $("modal-name-prompt").style.display="none";
+      updateAuthUI(currentUser);
+    }
+
     /* ── LEADERBOARD ──────────────────────────────────────────────────────── */
-    async function loadLeaderboard() {
-      const snap = await get(ref(db,"players"));
-      if (!snap.exists()) return [];
-      return Object.entries(snap.val())
+    async function showLeaderboard(){
+      const snap=await get(ref(db,"players"));
+      const wrap=$("leaderboard-rows"); wrap.innerHTML="";
+      if(!snap.exists()){wrap.innerHTML=`<div class="lb-empty">No gladiators recorded yet.</div>`;return;}
+      const board=Object.entries(snap.val())
         .map(([uid,p])=>({uid,...p}))
         .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0))
         .slice(0,10);
-    }
-
-    async function showLeaderboard() {
-      const board = await loadLeaderboard();
-      const wrap  = $("leaderboard-rows");
-      wrap.innerHTML = "";
-      if (!board.length) {
-        wrap.innerHTML=`<div class="lb-empty">No gladiators recorded yet. Be the first!</div>`;
-        return;
-      }
       board.forEach((p,i)=>{
         const row=document.createElement("div");
         row.className="lb-row"+(p.uid===currentUser?.uid?" lb-me":"");
+        const displayName=formatDisplayName(p.name||"Unknown",p);
         row.innerHTML=`
           <div class="lb-rank">${["🥇","🥈","🥉"][i]||`#${i+1}`}</div>
-          <div class="lb-name">${p.name||"Unknown"}${p.linked?"  <span class='lb-linked'>G</span>":""}</div>
+          <div class="lb-name">${displayName}${p.linked?" <span class='lb-linked'>G</span>":""}</div>
           <div class="lb-wins">${p.wins||0}W / ${p.losses||0}L</div>
           <div class="lb-gold">⚙ ${p.gold||0}</div>`;
         wrap.appendChild(row);
@@ -265,20 +420,18 @@
     }
 
     /* ── TOAST ────────────────────────────────────────────────────────────── */
-    function showToast(msg, isError=false) {
-      const t=$("toast");
-      t.textContent=msg;
+    function showToast(msg,isError=false){
+      const t=$("toast"); t.textContent=msg;
       t.className="toast"+(isError?" toast-error":"");
-      t.style.opacity="1";
-      t.style.transform="translateY(0)";
-      setTimeout(()=>{t.style.opacity="0";t.style.transform="translateY(10px)";},3500);
+      t.style.opacity="1"; t.style.transform="translateX(-50%) translateY(0)";
+      setTimeout(()=>{t.style.opacity="0";t.style.transform="translateX(-50%) translateY(10px)";},3500);
     }
 
     /* ── SESSION ──────────────────────────────────────────────────────────── */
     const SESSION_KEY="gladiator_session";
-    const saveSession = (code,role) => localStorage.setItem(SESSION_KEY,JSON.stringify({code,role}));
-    const clearSession= ()=> localStorage.removeItem(SESSION_KEY);
-    const loadSession = ()=>{ try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;} };
+    const saveSession=(code,role)=>localStorage.setItem(SESSION_KEY,JSON.stringify({code,role}));
+    const clearSession=()=>localStorage.removeItem(SESSION_KEY);
+    const loadSession=()=>{try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}};
 
     async function tryRejoin(){
       const s=loadSession(); if(!s)return false;
@@ -293,9 +446,8 @@
 
     /* ── DOM ──────────────────────────────────────────────────────────────── */
     const $=id=>document.getElementById(id);
-    const showOnly=id=>
-      ["screen-setup","screen-lobby","screen-leaderboard","screen-waiting","screen-battle","screen-results"]
-        .forEach(s=>$(s).style.display=s===id?"":"none");
+    const SCREENS=["screen-setup","screen-lobby","screen-leaderboard","screen-shop","screen-waiting","screen-battle","screen-results"];
+    const showOnly=id=>SCREENS.forEach(s=>$(s).style.display=s===id?"":"none");
 
     /* ── LOBBY ────────────────────────────────────────────────────────────── */
     let lobbyUnsub=null;
@@ -348,14 +500,12 @@
     function updateBattle(room){renderFighter(room.p1,"p1");renderFighter(room.p2,"p2");$("round-num").textContent=room.round;}
 
     /* ── ACTION UI ────────────────────────────────────────────────────────── */
-    let myAction=null, countdownTimer=null, resolving=false;
-
+    let myAction=null,countdownTimer=null,resolving=false;
     function showActionPicker(){
       myAction=null;
       $("action-picker").style.display="";$("action-status").style.display="none";$("action-waiting").style.display="none";
       document.querySelectorAll(".action-btn").forEach(b=>b.classList.remove("selected","disabled"));
     }
-
     function onActionChosen(action){
       if(myAction)return; myAction=action;
       document.querySelectorAll(".action-btn").forEach(b=>{b.classList.toggle("selected",b.dataset.action===action);b.classList.toggle("disabled",b.dataset.action!==action);});
@@ -363,19 +513,18 @@
       $("action-status-text").textContent=`You chose ${ACTION_META[action].emoji} ${ACTION_META[action].label} — waiting for opponent…`;
       update(roomRef,{[myRole==="p1"?"p1action":"p2action"]:action});
     }
-
     function showRevealCountdown(room,onDone){
       const am1=ACTION_META[room.p1action],am2=ACTION_META[room.p2action];
       $("action-picker").style.display="none";$("action-status").style.display="none";$("action-waiting").style.display="";
       $("action-waiting").innerHTML=`<div class="reveal-choices"><div class="reveal-choice"><div class="reveal-emoji">${am1.emoji}</div><div class="reveal-label">${am1.label}</div><div class="reveal-name">${room.p1.name}</div></div><div class="reveal-vs"><div class="reveal-countdown">⚔</div></div><div class="reveal-choice"><div class="reveal-emoji">${am2.emoji}</div><div class="reveal-label">${am2.label}</div><div class="reveal-name">${room.p2.name}</div></div></div>`;
-      setTimeout(onDone, 600);
+      setTimeout(onDone,600);
     }
 
     /* ── STATE ────────────────────────────────────────────────────────────── */
     let myRole=null,myCode=null,roomRef=null,logCount=0,roomSnap=null;
     let sel={name:"",weapon:null,armor:null};
 
-    /* ── FIREBASE OPS ─────────────────────────────────────────────────────── */
+    /* ── FIREBASE ROOM OPS ────────────────────────────────────────────────── */
     async function createRoom(data){
       const code=Math.random().toString(36).substr(2,5).toUpperCase();
       myCode=code; myRole="p1";
@@ -428,50 +577,38 @@
 
     async function handleGameOver(room){
       clearSession();
-      // Record stats if we have a logged-in user
-      if(currentUser && room.p1 && room.p2){
-        const myData  = myRole==="p1"?room.p1:room.p2;
-        const oppData = myRole==="p1"?room.p2:room.p1;
-        const myCrits = myRole==="p1"?(room.lastP1Crits||0):(room.lastP2Crits||0);
-        const maxHp   = ARMORS[myData.armor].hp;
-        let outcome="loss";
-        if(room.winner==="draw")           outcome="draw";
-        else if(room.winner===myRole)      outcome="win";
-        // Only record once — p1 records own, p2 records own
-        try {
-          const goldEarned = await recordResult(currentUser.uid, myData.name, outcome, myCrits, myData.hp, maxHp);
-          showResults(room, outcome, goldEarned);
-          return;
-        } catch(e){ console.error(e); }
+      if(currentUser&&room.p1&&room.p2){
+        const myData=myRole==="p1"?room.p1:room.p2;
+        const myCrits=myRole==="p1"?(room.lastP1Crits||0):(room.lastP2Crits||0);
+        const maxHp=ARMORS[myData.armor].hp;
+        let outcome=room.winner==="draw"?"draw":room.winner===myRole?"win":"loss";
+        try{
+          const goldEarned=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          showResults(room,outcome,goldEarned); return;
+        }catch(e){console.error(e);}
       }
-      showResults(room, null, 0);
+      showResults(room,null,0);
     }
 
-    function showResults(room, outcome, goldEarned){
+    function showResults(room,outcome,goldEarned){
       showOnly("screen-results");
-      const w=room.winner, wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
+      const w=room.winner,wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
-      $("victor-name").textContent =w==="draw"?"DRAW":wd.name;
-      $("victor-sub").textContent  =wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
-      $("result-p1-hp").textContent  =`${Math.max(0,room.p1.hp)} HP`;
+      $("victor-name").textContent=w==="draw"?"DRAW":wd.name;
+      $("victor-sub").textContent=wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
+      $("result-p1-hp").textContent=`${Math.max(0,room.p1.hp)} HP`;
       $("result-p1-name").textContent=room.p1.name;
-      $("result-p2-hp").textContent  =`${Math.max(0,room.p2.hp)} HP`;
+      $("result-p2-hp").textContent=`${Math.max(0,room.p2.hp)} HP`;
       $("result-p2-name").textContent=room.p2.name;
-
-      // Gold earned banner
       const goldBanner=$("gold-earned-banner");
-      if(outcome && goldEarned){
+      if(outcome&&goldEarned){
         const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
         goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span>`;
         goldBanner.style.display="";
-      } else {
-        goldBanner.style.display="none";
-      }
-
+      } else goldBanner.style.display="none";
       const box=$("chronicle-scroll"); box.innerHTML="";
       appendLogs(room.allLogs?Object.values(room.allLogs):[],box);
-
-      // Refresh leaderboard in background
+      updateAuthUI(currentUser);
       showLeaderboard();
     }
 
@@ -511,46 +648,71 @@
       if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null;}
       clearSession();
       myRole=null;myCode=null;roomRef=null;logCount=0;roomSnap=null;resolving=false;myAction=null;
-      sel={name:"",weapon:null,armor:null};
-      $("gladiator-name").value="";$("join-code").value="";
+      sel={name:playerProfile.name||"",weapon:null,armor:null};
+      $("gladiator-name").value=playerProfile.name||"";
+      $("join-code").value="";
       $("log-scroll").innerHTML="";$("chronicle-scroll").innerHTML="";
       document.querySelectorAll(".weapon-card,.armor-card").forEach(x=>x.classList.remove("selected"));
       checkReady(); showOnly("screen-setup");
     }
 
     /* ── BOOT ─────────────────────────────────────────────────────────────── */
-    document.addEventListener("DOMContentLoaded", async ()=>{
+    document.addEventListener("DOMContentLoaded",async()=>{
       buildWeaponGrid(); buildArmorGrid();
 
-      // Wire up buttons
       $("gladiator-name").oninput=e=>{sel.name=e.target.value;checkReady();};
       $("join-code").oninput=()=>checkReady();
       $("btn-to-lobby").onclick=()=>{showOnly("screen-lobby");startLobbyListener();};
       $("btn-lobby-back").onclick=()=>{stopLobbyListener();showOnly("screen-setup");};
       $("btn-leaderboard").onclick=()=>{showOnly("screen-leaderboard");showLeaderboard();};
       $("btn-leaderboard-back").onclick=()=>showOnly("screen-setup");
+      $("btn-shop").onclick=()=>{showOnly("screen-shop");buildShop();};
+      $("btn-shop-back").onclick=()=>showOnly("screen-setup");
       $("btn-create").onclick=()=>createRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor});
       $("btn-join").onclick  =()=>joinRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor},$("join-code").value);
       document.querySelectorAll(".action-btn").forEach(btn=>{btn.onclick=()=>onActionChosen(btn.dataset.action);});
       $("btn-play-again").onclick=resetToSetup;
       $("btn-leave-game").onclick=()=>{if(!confirm("Leave this game? Your opponent will claim victory."))return;resetToSetup();};
 
-      // Auth: sign in anonymously, then check for rejoin
-      onAuthStateChanged(auth, async user=>{
+      // Name change modal
+      $("btn-name-change-confirm").onclick=confirmNameChange;
+      $("btn-name-change-cancel").onclick=()=>$("modal-name-change").style.display="none";
+      $("name-change-input").onkeydown=e=>{if(e.key==="Enter")confirmNameChange();};
+
+      // Name prompt modal
+      $("btn-name-prompt-confirm").onclick=confirmNamePrompt;
+      $("name-prompt-input").onkeydown=e=>{if(e.key==="Enter")confirmNamePrompt();};
+
+      // Auth
+      onAuthStateChanged(auth,async user=>{
         if(user){
           currentUser=user;
+          await loadPlayerProfile(user.uid);
           updateAuthUI(user);
-          // Save name if set
-          if(sel.name.trim()) await savePlayerName(user.uid, sel.name);
-          // Try to rejoin only once on first auth
+
+          // Pre-fill name if we have one saved
+          if(playerProfile.name){
+            $("gladiator-name").value=playerProfile.name;
+            sel.name=playerProfile.name;
+            checkReady();
+          }
+
           if(!myRole){
             const rejoined=await tryRejoin();
-            if(!rejoined){ showOnly("screen-setup"); checkReady(); }
+            if(!rejoined){
+              // First visit — no name saved yet
+              if(!playerProfile.name){
+                showOnly("screen-setup");
+                showNamePrompt();
+              } else {
+                showOnly("screen-setup");
+                checkReady();
+              }
+            }
           }
         } else {
-          // Not signed in — sign in anonymously
-          try { await signInAnonymously(auth); }
-          catch(e){ console.error("Anon sign-in failed:",e); showOnly("screen-setup"); checkReady(); }
+          try{await signInAnonymously(auth);}
+          catch(e){console.error("Anon sign-in failed:",e);showOnly("screen-setup");checkReady();}
         }
       });
     });
@@ -560,13 +722,37 @@
 <div id="sparks"></div>
 <div id="toast" class="toast"></div>
 
+<!-- NAME PROMPT MODAL -->
+<div id="modal-name-prompt" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">Welcome, Gladiator</div>
+    <div class="modal-desc">Enter your name. It will be saved to your account and displayed in battle.</div>
+    <input type="text" id="name-prompt-input" class="modal-input" placeholder="Your gladiator name…" maxlength="24" />
+    <div class="modal-actions">
+      <button class="btn btn-fight" id="btn-name-prompt-confirm" style="width:100%">Enter the Arena</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAME CHANGE MODAL -->
+<div id="modal-name-change" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">Change Your Name</div>
+    <div class="modal-desc">Costs ⚙ 50 gold. Your new name will be saved immediately.</div>
+    <input type="text" id="name-change-input" class="modal-input" placeholder="New gladiator name…" maxlength="24" />
+    <div class="modal-actions">
+      <button class="btn" id="btn-name-change-cancel">Cancel</button>
+      <button class="btn btn-fight" id="btn-name-change-confirm">Confirm ⚙ 50</button>
+    </div>
+  </div>
+</div>
+
 <div class="page">
   <div class="masthead">
     <h1>Gladiator Gauntlet</h1>
     <div class="sub">Hit · Block · Dodge · Fight to the Death</div>
   </div>
 
-  <!-- Auth bar -->
   <div id="auth-bar" class="auth-bar"></div>
 
   <!-- SETUP -->
@@ -586,9 +772,24 @@
     <div class="setup-card">
       <div class="section-label">Enter the Arena</div>
       <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">Enter the Arena</button>
-      <div style="text-align:center;margin-top:0.75rem">
+      <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem">
         <button class="btn" id="btn-leaderboard" style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">🏆 Leaderboard</button>
+        <button class="btn" id="btn-shop"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">⚙ Shop</button>
       </div>
+    </div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="screen-shop" style="display:none">
+    <div class="setup-card">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>⚙ Armory Shop</span>
+        <div style="display:flex;align-items:center;gap:0.8rem">
+          <span id="shop-gold-display" class="shop-gold-hdr"></span>
+          <button class="btn" id="btn-shop-back" style="padding:0.3rem 1rem;font-size:0.65rem">← Back</button>
+        </div>
+      </div>
+      <div id="shop-items"></div>
     </div>
   </div>
 
@@ -675,9 +876,7 @@
       <div class="victor-label" id="victor-label">The Victor Stands</div>
       <div class="victor-name"  id="victor-name"></div>
       <div class="victor-sub"   id="victor-sub"></div>
-
       <div id="gold-earned-banner" class="gold-earned-banner" style="display:none"></div>
-
       <div class="final-scores">
         <div><div class="f-hp p1" id="result-p1-hp"></div><div class="f-label" id="result-p1-name"></div></div>
         <div class="vs">vs</div>
