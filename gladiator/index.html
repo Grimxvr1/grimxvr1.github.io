@@ -33,9 +33,9 @@
       flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[12,22], strongAgainst:["crossbow","dualblades"],    weakAgainst:["greatsword","spear"],     flavor:"lashes",    shieldBreak:true },
     };
     const ARMORS = {
-      heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"High HP, strong defense.", hp:160, defense:0.28 },
-      medium: { name:"Chainmail",   emoji:"🔗", desc:"Balanced HP and defense.", hp:120, defense:0.15 },
-      light:  { name:"Leather",     emoji:"🦺", desc:"Low HP, minimal defense.", hp:85,  defense:0.05 },
+      heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"Your chosen move repeats automatically next round.", hp:160, defense:0.28 },
+      medium: { name:"Chainmail",   emoji:"🔗", desc:"Balanced HP and defense. No special effect.", hp:120, defense:0.15 },
+      light:  { name:"Leather",     emoji:"🦺", desc:"Strikes twice per round — double the hits, double the risk.", hp:85,  defense:0.05 },
     };
     const ROUND_EVENTS = [
       { text:"The crowd hurls sand into the arena — visibility drops!",                              effect:"blind" },
@@ -122,6 +122,7 @@
       let p1={...state.p1}, p2={...state.p2};
       const a1=state.p1action, a2=state.p2action;
       let p1Crits=0, p2Crits=0;
+
       logs.push({type:"event",text:event.text});
       if(effect==="fire"){p1.hp-=event.damage;p2.hp-=event.damage;logs.push({type:"env",text:`Both fighters take ${event.damage} fire damage.`});}
       const daggerLucky=Math.random()<0.5?"p1":"p2";
@@ -129,36 +130,68 @@
       if(effect==="heal"){const lucky=Math.random()<0.5?"p1":"p2",amt=event.amount;if(lucky==="p1"){p1.hp+=amt;logs.push({type:"env",text:`${p1.name} receives emergency aid! +${amt} HP.`});}else{p2.hp+=amt;logs.push({type:"env",text:`${p2.name} receives emergency aid! +${amt} HP.`});}}
       if(effect==="dagger") logs.push({type:"env",text:`${daggerLucky==="p1"?p1.name:p2.name} snatches the dagger.`});
       if(effect==="execute")logs.push({type:"env",text:`${executeLucky==="p1"?p1.name:p2.name} readies a savage blow.`});
+
+      // Heavy armor: announce if locked in
+      if(p1.armor==="heavy")logs.push({type:"env",text:`${p1.name}'s heavy plate commits them to their stance.`});
+      if(p2.armor==="heavy")logs.push({type:"env",text:`${p2.name}'s heavy plate commits them to their stance.`});
+
       const result=rpsResult(a1,a2);
       const am1=ACTION_META[a1], am2=ACTION_META[a2];
       logs.push({type:"reveal",text:`${p1.name} chose ${am1.emoji} ${am1.label} — ${p2.name} chose ${am2.emoji} ${am2.label}.`});
       if(result==="tie")logs.push({type:"env",text:`Both fighters clash simultaneously — neither gains the upper hand!`});
       else if(result==="a")logs.push({type:"env",text:`${am1.label} overcomes ${am2.label}! ${p1.name} has the advantage.`});
       else logs.push({type:"env",text:`${am2.label} overcomes ${am1.label}! ${p2.name} has the advantage.`});
-      {let {dmg,crit}=calcDmg(p1,p2,effect);
-       if(effect==="dagger"&&daggerLucky==="p1")dmg+=event.bonus;
-       if(effect==="execute"&&executeLucky==="p1")dmg+=event.bonus;
-       const mult=result==="tie"?0.5:result==="a"?1.0:0.5;
-       const total=Math.max(1,Math.floor(dmg*mult));
-       p2.hp-=total;if(crit)p1Crits++;
-       const lt=result==="b"?"weak":crit?"crit":"hit";
-       const q=result==="b"?" (glancing blow)":crit?" — a devastating critical strike!":".";
-       logs.push(mkLog(lt,p1.name,WEAPONS[p1.weapon].name,ARMORS[p1.armor].name,`${p1.name} ${WEAPONS[p1.weapon].flavor} ${p2.name} for ${total} damage${q}`));}
-      {let {dmg,crit}=calcDmg(p2,p1,effect);
-       if(effect==="dagger"&&daggerLucky==="p2")dmg+=event.bonus;
-       if(effect==="execute"&&executeLucky==="p2")dmg+=event.bonus;
-       const mult=result==="tie"?0.5:result==="b"?1.0:0.5;
-       const total=Math.max(1,Math.floor(dmg*mult));
-       p1.hp-=total;if(crit)p2Crits++;
-       const lt=result==="a"?"weak":crit?"crit":"hit";
-       const q=result==="a"?" (glancing blow)":crit?" — a devastating critical strike!":".";
-       logs.push(mkLog(lt,p2.name,WEAPONS[p2.weapon].name,ARMORS[p2.armor].name,`${p2.name} ${WEAPONS[p2.weapon].flavor} ${p1.name} for ${total} damage${q}`));}
+
+      // Helper: apply one strike from attacker → defender
+      function applyStrike(attacker, defender, isP1Attacking, strikeNum){
+        let {dmg,crit}=calcDmg(attacker,defender,effect);
+        if(isP1Attacking){
+          if(effect==="dagger"&&daggerLucky==="p1"&&strikeNum===1)dmg+=event.bonus;
+          if(effect==="execute"&&executeLucky==="p1"&&strikeNum===1)dmg+=event.bonus;
+        } else {
+          if(effect==="dagger"&&daggerLucky==="p2"&&strikeNum===1)dmg+=event.bonus;
+          if(effect==="execute"&&executeLucky==="p2"&&strikeNum===1)dmg+=event.bonus;
+        }
+        const mult = result==="tie" ? 0.5 : (isP1Attacking ? (result==="a"?1.0:0.5) : (result==="b"?1.0:0.5));
+        const total=Math.max(1,Math.floor(dmg*mult));
+        if(crit){ if(isP1Attacking)p1Crits++; else p2Crits++; }
+        const lt = isP1Attacking
+          ? (result==="b"?"weak":crit?"crit":"hit")
+          : (result==="a"?"weak":crit?"crit":"hit");
+        const q  = isP1Attacking
+          ? (result==="b"?" (glancing blow)":crit?" — a devastating critical strike!":".")
+          : (result==="a"?" (glancing blow)":crit?" — a devastating critical strike!":".");
+        const suffix = strikeNum===2 ? " (second strike)" : "";
+        logs.push(mkLog(lt,attacker.name,WEAPONS[attacker.weapon].name,ARMORS[attacker.armor].name,
+          `${attacker.name} ${WEAPONS[attacker.weapon].flavor} ${defender.name} for ${total} damage${q}${suffix}`));
+        return total;
+      }
+
+      // P1 → P2
+      p2.hp -= applyStrike(p1,p2,true,1);
+      if(p1.armor==="light"){
+        logs.push({type:"env",text:`${p1.name} strikes again with blinding speed!`});
+        p2.hp -= applyStrike(p1,p2,true,2);
+      }
+
+      // P2 → P1
+      p1.hp -= applyStrike(p2,p1,false,1);
+      if(p2.armor==="light"){
+        logs.push({type:"env",text:`${p2.name} strikes again with blinding speed!`});
+        p1.hp -= applyStrike(p2,p1,false,2);
+      }
+
       p1.hp=Math.max(0,Math.min(p1.hp,ARMORS[p1.armor].hp));
       p2.hp=Math.max(0,Math.min(p2.hp,ARMORS[p2.armor].hp));
       const gameOver=p1.hp<=0||p2.hp<=0;
       let winner=null;
       if(gameOver){if(p1.hp<=0&&p2.hp<=0)winner="draw";else if(p1.hp<=0)winner="p2";else winner="p1";}
-      return{p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits};
+
+      // Heavy armor: lock next action to the same choice
+      const nextP1action = p1.armor==="heavy" ? a1 : null;
+      const nextP2action = p2.armor==="heavy" ? a2 : null;
+
+      return{p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits,nextP1action,nextP2action};
     }
 
     /* ── AUTH ─────────────────────────────────────────────────────────────── */
@@ -569,6 +602,9 @@
           showOnly("screen-battle"); updateBattle(room);
           const myPick=room[myRole==="p1"?"p1action":"p2action"];
           const oppPick=room[myRole==="p1"?"p2action":"p1action"];
+          const myArmor=(myRole==="p1"?room.p1:room.p2).armor;
+          const isLocked=myArmor==="heavy"&&myPick;
+
           if(myPick&&oppPick&&room.resolveState==="idle"&&!resolving){
             resolving=true;
             showRevealCountdown(room,async()=>{
@@ -576,14 +612,32 @@
                 await update(roomRef,{resolveState:"resolving"});
                 const result=processRound(roomSnap);
                 const cur=roomSnap.allLogs?Object.values(roomSnap.allLogs):[];
-                await update(roomRef,{p1:result.p1,p2:result.p2,round:result.round,eventIdx:result.eventIdx,allLogs:[...cur,...result.logs],gameOver:result.gameOver,winner:result.winner,phase:result.gameOver?"done":"battle",p1action:null,p2action:null,resolveState:"idle",lastP1Crits:result.p1Crits,lastP2Crits:result.p2Crits});
+                await update(roomRef,{
+                  p1:result.p1, p2:result.p2,
+                  round:result.round, eventIdx:result.eventIdx,
+                  allLogs:[...cur,...result.logs],
+                  gameOver:result.gameOver, winner:result.winner,
+                  phase:result.gameOver?"done":"battle",
+                  p1action:result.nextP1action||null,
+                  p2action:result.nextP2action||null,
+                  resolveState:"idle",
+                  lastP1Crits:result.p1Crits, lastP2Crits:result.p2Crits
+                });
               }
               resolving=false; myAction=null;
             });
             return;
           }
-          if(myPick&&!oppPick){$("action-picker").style.display="none";$("action-status").style.display="";$("action-waiting").style.display="none";$("action-status-text").textContent=`You chose ${ACTION_META[myPick].emoji} ${ACTION_META[myPick].label} — waiting for opponent…`;return;}
-          if(!myPick)showActionPicker();
+          if(myPick&&!oppPick){
+            $("action-picker").style.display="none";
+            $("action-status").style.display="";
+            $("action-waiting").style.display="none";
+            $("action-status-text").textContent = isLocked
+              ? `🔒 Heavy Plate locks you into ${ACTION_META[myPick].emoji} ${ACTION_META[myPick].label} — waiting for opponent…`
+              : `You chose ${ACTION_META[myPick].emoji} ${ACTION_META[myPick].label} — waiting for opponent…`;
+            return;
+          }
+          if(!myPick) showActionPicker();
         }
       });
     }
