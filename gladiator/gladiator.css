@@ -988,6 +988,50 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 }
 .modal-actions .btn { flex: 1; }
 
+.modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 1rem 0 0.8rem;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+.modal-divider::before,
+.modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.modal-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  padding: 0.55rem 1rem;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  transition: background 0.15s, border-color 0.15s;
+}
+.modal-google-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.modal-google-hint {
+  text-align: center;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  opacity: 0.7;
+}
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .armor-grid  { grid-template-columns: 1fr; }

@@ -12,7 +12,7 @@
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
     import {
       getAuth, signInAnonymously, onAuthStateChanged,
-      GoogleAuthProvider, linkWithPopup, unlink
+      GoogleAuthProvider, linkWithPopup, unlink, signInWithPopup
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { firebaseConfig } from "./firebase-config.js";
 
@@ -185,8 +185,30 @@
         updateAuthUI(currentUser);
         showToast("Google account linked! Your stats are now permanent.");
       }catch(e){
-        if(e.code==="auth/credential-already-in-use") showToast("That Google account is already linked to another gladiator.",true);
-        else showToast("Could not link Google account. Try again.",true);
+        if(e.code==="auth/credential-already-in-use"){
+          // That Google account already has a gladiator — offer to sign in to it instead
+          if(confirm("That Google account already has a gladiator. Sign in to it and restore your stats?")){
+            await signInWithGoogle(true);
+          }
+        } else {
+          showToast("Could not link Google account. Try again.",true);
+        }
+      }
+    }
+
+    // signInWithGoogle: called from login modal or as fallback from linkGoogle
+    // restoreOnly=true means we're switching to an existing Google account
+    async function signInWithGoogle(restoreOnly=false){
+      try{
+        const provider=new GoogleAuthProvider();
+        const result=await signInWithPopup(auth,provider);
+        // onAuthStateChanged will fire and handle the rest
+        // If this was triggered from the name prompt, close it
+        $("modal-name-prompt").style.display="none";
+      }catch(e){
+        if(e.code!=="auth/popup-closed-by-user"){
+          showToast("Google sign-in failed. Try again.",true);
+        }
       }
     }
 
@@ -682,6 +704,7 @@
       // Name prompt modal
       $("btn-name-prompt-confirm").onclick=confirmNamePrompt;
       $("name-prompt-input").onkeydown=e=>{if(e.key==="Enter")confirmNamePrompt();};
+      $("btn-google-signin").onclick=()=>signInWithGoogle();
 
       // Auth
       onAuthStateChanged(auth,async user=>{
@@ -690,23 +713,22 @@
           await loadPlayerProfile(user.uid);
           updateAuthUI(user);
 
-          // Pre-fill name if we have one saved
           if(playerProfile.name){
+            // Existing gladiator — restore everything
             updateNameDisplay();
-          }
-
-          if(!myRole){
-            const rejoined=await tryRejoin();
-            if(!rejoined){
-              // First visit — no name saved yet
-              if(!playerProfile.name){
-                showOnly("screen-setup");
-                showNamePrompt();
-              } else {
-                showOnly("screen-setup");
-                checkReady();
-              }
+            $("modal-name-prompt").style.display="none";
+            if(!myRole){
+              const rejoined=await tryRejoin();
+              if(!rejoined){ showOnly("screen-setup"); checkReady(); }
             }
+            // If Google-linked, show a welcome back toast
+            if(isLinked(user) && !sessionStorage.getItem("welcomed")){
+              sessionStorage.setItem("welcomed","1");
+              showToast(`Welcome back, ${playerProfile.name}! Your stats have been restored.`);
+            }
+          } else {
+            // Brand new gladiator — show name prompt
+            if(!myRole){ showOnly("screen-setup"); showNamePrompt(); }
           }
         } else {
           try{await signInAnonymously(auth);}
@@ -724,11 +746,24 @@
 <div id="modal-name-prompt" class="modal-overlay" style="display:none">
   <div class="modal-box">
     <div class="modal-title">Welcome, Gladiator</div>
-    <div class="modal-desc">Enter your name. It will be saved to your account and displayed in battle.</div>
+    <div class="modal-desc">Enter a name to begin — or sign in with Google to restore an existing gladiator.</div>
     <input type="text" id="name-prompt-input" class="modal-input" placeholder="Your gladiator name…" maxlength="24" />
     <div class="modal-actions">
-      <button class="btn btn-fight" id="btn-name-prompt-confirm" style="width:100%">Enter the Arena</button>
+      <button class="btn btn-fight" id="btn-name-prompt-confirm" style="flex:2">Enter the Arena</button>
     </div>
+    <div class="modal-divider">
+      <span>or</span>
+    </div>
+    <button class="btn modal-google-btn" id="btn-google-signin">
+      <svg width="16" height="16" viewBox="0 0 48 48" style="vertical-align:middle;margin-right:0.5rem">
+        <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.6-8 19.6-20 0-1.3-.1-2.7-.4-4z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.8 13.5-4.7l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.6-2.9-11.4-7.1l-6.6 5.1C9.6 39.5 16.3 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.4-4.6 5.8l6.2 5.2C40.8 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="modal-google-hint">Restores your name, gold and all shop purchases</div>
   </div>
 </div>
 
