@@ -302,7 +302,7 @@
       const pRef=ref(db,`players/${uid}`);
       const snap=await get(pRef);
       if(!snap.exists()){
-        const initial={name,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null,linked:false};
+        const initial={name,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null,linked:isLinked(currentUser)||false};
         await set(pRef,initial);
         Object.assign(playerProfile,initial);
       } else {
