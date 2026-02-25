@@ -57,7 +57,7 @@
       block: { label:"Block", emoji:"🛡️" },
       dodge: { label:"Dodge", emoji:"💨" },
     };
-    const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25 };
+    const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25, rankBonus:[15,10,5] };
 
     /* ── SHOP CATALOGUE ───────────────────────────────────────────────────── */
     // Each item: id, category, name, desc, cost, value (what gets saved)
@@ -288,6 +288,23 @@
       let goldEarned=outcome==="win"?GOLD.win:outcome==="loss"?GOLD.loss:GOLD.draw;
       goldEarned+=crits*GOLD.crit;
       if(outcome==="win"&&finalHp/maxHp<0.2)goldEarned+=GOLD.lowHpBonus;
+
+      // Check leaderboard rank for top-3 win bonus
+      let rankBonus=0;
+      if(outcome==="win"){
+        try{
+          const snap=await get(ref(db,"players"));
+          if(snap.exists()){
+            const sorted=Object.entries(snap.val())
+              .map(([id,p])=>({id,...p}))
+              .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0));
+            const rank=sorted.findIndex(p=>p.id===uid);
+            if(rank>=0&&rank<=2) rankBonus=GOLD.rankBonus[rank];
+          }
+        }catch(e){ /* non-fatal — skip rank bonus if fetch fails */ }
+        goldEarned+=rankBonus;
+      }
+
       await runTransaction(pRef,current=>{
         if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null};
         current.gold=(current.gold||0)+goldEarned;
@@ -300,7 +317,7 @@
       if(outcome==="win")playerProfile.wins=(playerProfile.wins||0)+1;
       else if(outcome==="loss")playerProfile.losses=(playerProfile.losses||0)+1;
       else playerProfile.draws=(playerProfile.draws||0)+1;
-      return goldEarned;
+      return {total:goldEarned, rankBonus};
     }
 
     /* ── SHOP ─────────────────────────────────────────────────────────────── */
@@ -644,13 +661,16 @@
         const myData=room.p1;
         const maxHp=ARMORS[myData.armor].hp;
         const outcome=w==="draw"?"draw":w==="p1"?"win":"loss";
-        // Count p1 crits from logs
         const myCrits=room.allLogs.filter(l=>l.type==="crit"&&l.who===myData.name).length;
         try{
-          const goldEarned=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          const {total,rankBonus}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
           const goldBanner=$("gold-earned-banner");
           const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
-          goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span> <span style="opacity:0.5;font-size:0.8em">(Skirmish)</span>`;
+          const rankLabels=["🥇 Top rank","🥈 2nd rank","🥉 3rd rank"];
+          const rankSnippet=rankBonus>0
+            ? ` <span class="gold-rank-bonus">+${rankBonus} ${rankLabels[GOLD.rankBonus.indexOf(rankBonus)]||"rank"} bonus</span>`
+            : "";
+          goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${total} gold</span>${rankSnippet} <span style="opacity:0.5;font-size:0.8em">(Skirmish)</span>`;
           goldBanner.style.display="";
           updateAuthUI(currentUser);
         }catch(e){ console.error(e); $("gold-earned-banner").style.display="none"; }
@@ -842,14 +862,14 @@
         const maxHp=ARMORS[myData.armor].hp;
         let outcome=room.winner==="draw"?"draw":room.winner===myRole?"win":"loss";
         try{
-          const goldEarned=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
-          showResults(room,outcome,goldEarned); return;
+          const {total,rankBonus}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          showResults(room,outcome,total,rankBonus); return;
         }catch(e){console.error(e);}
       }
-      showResults(room,null,0);
+      showResults(room,null,0,0);
     }
 
-    function showResults(room,outcome,goldEarned){
+    function showResults(room,outcome,goldEarned,rankBonus=0){
       showOnly("screen-results");
       const w=room.winner,wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
@@ -862,7 +882,11 @@
       const goldBanner=$("gold-earned-banner");
       if(outcome&&goldEarned){
         const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
-        goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span>`;
+        const rankLabels=["🥇 Top rank","🥈 2nd rank","🥉 3rd rank"];
+        const rankSnippet=rankBonus>0
+          ? ` <span class="gold-rank-bonus">+${rankBonus} ${rankLabels[GOLD.rankBonus.indexOf(rankBonus)]||"rank"} bonus</span>`
+          : "";
+        goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span>${rankSnippet}`;
         goldBanner.style.display="";
       } else goldBanner.style.display="none";
       const box=$("chronicle-scroll"); box.innerHTML="";

@@ -1032,6 +1032,20 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   opacity: 0.7;
 }
 
+.gold-rank-bonus {
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: #f0d870;
+  border: 1px solid rgba(240,216,112,0.35);
+  background: rgba(240,216,112,0.08);
+  padding: 0.1rem 0.5rem;
+  border-radius: 1px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
 /* ── SKIRMISH ────────────────────────────────────────────────────────────────── */
 .btn-skirmish {
   background: rgba(30,60,30,0.3);
