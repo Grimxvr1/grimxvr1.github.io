@@ -187,9 +187,9 @@
       let winner=null;
       if(gameOver){if(p1.hp<=0&&p2.hp<=0)winner="draw";else if(p1.hp<=0)winner="p2";else winner="p1";}
 
-      // Heavy armor: lock next action to the same choice
-      const nextP1action = p1.armor==="heavy" ? a1 : null;
-      const nextP2action = p2.armor==="heavy" ? a2 : null;
+      // Heavy armor: lock NEXT round only — never chain beyond one repeat
+      const nextP1action = (p1.armor==="heavy" && !state.nextP1action) ? a1 : null;
+      const nextP2action = (p2.armor==="heavy" && !state.nextP2action) ? a2 : null;
 
       return{p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits,nextP1action,nextP2action};
     }
