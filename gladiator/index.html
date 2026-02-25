@@ -599,7 +599,7 @@
       const cpuName  =CPU_NAMES [Math.floor(Math.random()*CPU_NAMES.length)];
 
       skirmishState={
-        p1:{ name:sel.name, weapon:sel.weapon, armor:sel.armor, hp:ARMORS[sel.armor].hp, activeTaunt:playerProfile.activeTaunt||null },
+        p1:{ name:sel.name, weapon:sel.weapon, armor:sel.armor, hp:ARMORS[sel.armor].hp, activeTaunt:playerProfile.activeTaunt||null, activeTrail:playerProfile.activeTrail||null },
         p2:{ name:cpuName,  weapon:cpuWeapon,  armor:cpuArmor,  hp:ARMORS[cpuArmor].hp,  activeTaunt:null },
         round:1,
         eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),
