@@ -187,9 +187,10 @@
       let winner=null;
       if(gameOver){if(p1.hp<=0&&p2.hp<=0)winner="draw";else if(p1.hp<=0)winner="p2";else winner="p1";}
 
-      // Heavy armor: lock NEXT round only — never chain beyond one repeat
-      const nextP1action = (p1.armor==="heavy" && !state.nextP1action) ? a1 : null;
-      const nextP2action = (p2.armor==="heavy" && !state.nextP2action) ? a2 : null;
+      // Heavy armor: only set lock if this round's action was a FREE choice (not already a locked round).
+      // We detect a locked round by checking if p1action/p2action came from a pre-lock (passed in via state.wasLockedP1/P2).
+      const nextP1action = (p1.armor==="heavy" && !state.wasLockedP1) ? a1 : null;
+      const nextP2action = (p2.armor==="heavy" && !state.wasLockedP2) ? a2 : null;
 
       return{p1,p2,round:state.round+1,eventIdx:state.eventIdx+1,logs,gameOver,winner,p1Crits,p2Crits,nextP1action,nextP2action};
     }
@@ -569,6 +570,7 @@
       if(skirmishState.nextP1action){
         skirmishState.p1action=skirmishState.nextP1action;
         skirmishState.nextP1action=null;
+        skirmishState.wasLockedP1=true;
         $("action-picker").style.display="none";
         $("action-status").style.display="";
         $("action-waiting").style.display="none";
@@ -580,11 +582,12 @@
     }
 
     function skirmishQueueCPU(){
-      // CPU "thinks" for 600–1200ms then picks
       setTimeout(()=>{
+        const isLockedRound=!!skirmishState.nextP2action;
         const cpuAction=cpuPickActionSmart(skirmishState.nextP2action||null);
         skirmishState.p2action=cpuAction;
         skirmishState.nextP2action=null;
+        skirmishState.wasLockedP2=isLockedRound;
         skirmishResolve();
       }, 600+Math.random()*600);
     }
@@ -621,6 +624,8 @@
           p1action:null, p2action:null,
           nextP1action:result.nextP1action||null,
           nextP2action:result.nextP2action||null,
+          wasLockedP1:false,
+          wasLockedP2:false,
         };
 
         // Append new logs
@@ -833,7 +838,9 @@
                   p1action:result.nextP1action||null,
                   p2action:result.nextP2action||null,
                   resolveState:"idle",
-                  lastP1Crits:result.p1Crits, lastP2Crits:result.p2Crits
+                  lastP1Crits:result.p1Crits, lastP2Crits:result.p2Crits,
+                  wasLockedP1: !!result.nextP1action,
+                  wasLockedP2: !!result.nextP2action,
                 });
               }
               resolving=false; myAction=null;
