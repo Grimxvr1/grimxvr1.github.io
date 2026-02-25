@@ -473,7 +473,198 @@
       setTimeout(()=>{t.style.opacity="0";t.style.transform="translateX(-50%) translateY(10px)";},3500);
     }
 
-    /* ── SESSION ──────────────────────────────────────────────────────────── */
+    /* ── CPU SKIRMISH ─────────────────────────────────────────────────────── */
+    let skirmishMode = false;
+    let skirmishState = null; // { p1, p2, round, eventIdx, allLogs, gameOver, winner, p1action, p2action, nextP1action, nextP2action }
+
+    const CPU_NAMES = ["Arena Sentinel","Iron Shade","The Executioner","Vael the Merciless",
+                       "Brutus Rex","Dusk Reaver","Cinder Fang","The Pale Champion"];
+
+    // Weighted AI: tracks player's last 3 moves and counter-picks with 50% probability
+    let cpuMemory = [];
+    function cpuPickAction(lockedAction) {
+      if(lockedAction) return lockedAction; // heavy armor: locked in
+      const actions = ["hit","block","dodge"];
+      // Count player's recent moves
+      if(cpuMemory.length >= 2){
+        const freq = {hit:0,block:0,dodge:0};
+        cpuMemory.forEach(m=>freq[m]++);
+        const mostUsed = actions.sort((a,b)=>freq[b]-freq[a])[0];
+        // 55% chance to counter the most-used move
+        if(Math.random()<0.55) return BEATS[mostUsed]; // BEATS[x] = what beats x... wait, BEATS maps action to what it beats
+        // Actually BEATS[hit]=dodge means hit BEATS dodge. So to COUNTER hit, pick block.
+        // Counter map: what beats each action
+      }
+      return actions[Math.floor(Math.random()*3)];
+    }
+
+    // Counter map: given player's likely action, what should CPU pick to beat it?
+    const COUNTER = { hit:"block", block:"dodge", dodge:"hit" };
+
+    function cpuPickActionSmart(lockedAction){
+      if(lockedAction) return lockedAction;
+      const actions=["hit","block","dodge"];
+      if(cpuMemory.length>=2){
+        const freq={hit:0,block:0,dodge:0};
+        cpuMemory.slice(-3).forEach(m=>freq[m]++);
+        const mostUsed=actions.reduce((a,b)=>freq[a]>=freq[b]?a:b);
+        if(Math.random()<0.55) return COUNTER[mostUsed];
+      }
+      return actions[Math.floor(Math.random()*3)];
+    }
+
+    function startSkirmish(){
+      if(!sel.weapon||!sel.armor){showToast("Choose your weapon and armor first.",true);return;}
+      skirmishMode=true;
+      cpuMemory=[];
+
+      const weaponKeys=Object.keys(WEAPONS);
+      const armorKeys=Object.keys(ARMORS);
+      const cpuWeapon=weaponKeys[Math.floor(Math.random()*weaponKeys.length)];
+      const cpuArmor =armorKeys [Math.floor(Math.random()*armorKeys.length)];
+      const cpuName  =CPU_NAMES [Math.floor(Math.random()*CPU_NAMES.length)];
+
+      skirmishState={
+        p1:{ name:sel.name, weapon:sel.weapon, armor:sel.armor, hp:ARMORS[sel.armor].hp },
+        p2:{ name:cpuName,  weapon:cpuWeapon,  armor:cpuArmor,  hp:ARMORS[cpuArmor].hp },
+        round:1,
+        eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),
+        allLogs:[],
+        gameOver:false,
+        winner:null,
+        p1action:null,
+        p2action:null,
+        nextP1action:null,
+        nextP2action:null,
+      };
+
+      logCount=0;
+      $("log-scroll").innerHTML="";
+      showOnly("screen-battle");
+      updateBattle(skirmishState);
+      // Show skirmish indicator
+      $("skirmish-badge").style.display="";
+      skirmishShowActionOrLocked();
+    }
+
+    function skirmishShowActionOrLocked(){
+      // If player has a pre-locked action (heavy armor), show it and queue CPU
+      if(skirmishState.nextP1action){
+        skirmishState.p1action=skirmishState.nextP1action;
+        skirmishState.nextP1action=null;
+        $("action-picker").style.display="none";
+        $("action-status").style.display="";
+        $("action-waiting").style.display="none";
+        $("action-status-text").textContent=`🔒 Heavy Plate locks you into ${ACTION_META[skirmishState.p1action].emoji} ${ACTION_META[skirmishState.p1action].label} — CPU is thinking…`;
+        skirmishQueueCPU();
+      } else {
+        showActionPicker();
+      }
+    }
+
+    function skirmishQueueCPU(){
+      // CPU "thinks" for 600–1200ms then picks
+      setTimeout(()=>{
+        const cpuAction=cpuPickActionSmart(skirmishState.nextP2action||null);
+        skirmishState.p2action=cpuAction;
+        skirmishState.nextP2action=null;
+        skirmishResolve();
+      }, 600+Math.random()*600);
+    }
+
+    function skirmishOnActionChosen(action){
+      if(skirmishState.p1action) return; // already locked
+      skirmishState.p1action=action;
+      cpuMemory.push(action); // track for AI
+      if(cpuMemory.length>5) cpuMemory.shift();
+
+      // Show waiting state
+      document.querySelectorAll(".action-btn").forEach(b=>{
+        b.classList.toggle("selected",b.dataset.action===action);
+        b.classList.toggle("disabled",b.dataset.action!==action);
+      });
+      $("action-picker").style.display="none";
+      $("action-status").style.display="";
+      $("action-waiting").style.display="none";
+      $("action-status-text").textContent=`You chose ${ACTION_META[action].emoji} ${ACTION_META[action].label} — CPU is thinking…`;
+
+      skirmishQueueCPU();
+    }
+
+    function skirmishResolve(){
+      // Show reveal for 600ms then process
+      showRevealCountdown(skirmishState, ()=>{
+        const result=processRound(skirmishState);
+        skirmishState={
+          ...skirmishState,
+          p1:result.p1, p2:result.p2,
+          round:result.round, eventIdx:result.eventIdx,
+          allLogs:[...skirmishState.allLogs,...result.logs],
+          gameOver:result.gameOver, winner:result.winner,
+          p1action:null, p2action:null,
+          nextP1action:result.nextP1action||null,
+          nextP2action:result.nextP2action||null,
+        };
+
+        // Append new logs
+        const allLogs=skirmishState.allLogs;
+        const newLogs=allLogs.slice(logCount);
+        appendLogs(newLogs,$("log-scroll"));
+        logCount=allLogs.length;
+        triggerSparks();
+
+        if(skirmishState.gameOver){
+          handleSkirmishOver();
+        } else {
+          updateBattle(skirmishState);
+          skirmishShowActionOrLocked();
+        }
+      });
+    }
+
+    async function handleSkirmishOver(){
+      showOnly("screen-results");
+      const room=skirmishState;
+      const w=room.winner;
+      const wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
+      $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
+      $("victor-name").textContent =w==="draw"?"DRAW":wd.name;
+      $("victor-sub").textContent  =wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
+      $("result-p1-hp").textContent =`${Math.max(0,room.p1.hp)} HP`;
+      $("result-p1-name").textContent=room.p1.name;
+      $("result-p2-hp").textContent =`${Math.max(0,room.p2.hp)} HP`;
+      $("result-p2-name").textContent=room.p2.name;
+
+      // Chronicle
+      const box=$("chronicle-scroll"); box.innerHTML="";
+      appendLogs(room.allLogs,box);
+
+      // Record stats if logged in
+      if(currentUser){
+        const myData=room.p1;
+        const maxHp=ARMORS[myData.armor].hp;
+        const outcome=w==="draw"?"draw":w==="p1"?"win":"loss";
+        // Count p1 crits from logs
+        const myCrits=room.allLogs.filter(l=>l.type==="crit"&&l.who===myData.name).length;
+        try{
+          const goldEarned=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          const goldBanner=$("gold-earned-banner");
+          const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
+          goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span> <span style="opacity:0.5;font-size:0.8em">(Skirmish)</span>`;
+          goldBanner.style.display="";
+          updateAuthUI(currentUser);
+        }catch(e){ console.error(e); $("gold-earned-banner").style.display="none"; }
+      } else {
+        $("gold-earned-banner").style.display="none";
+      }
+    }
+
+    function resetSkirmish(){
+      skirmishMode=false;
+      skirmishState=null;
+      cpuMemory=[];
+      $("skirmish-badge").style.display="none";
+    }
     const SESSION_KEY="gladiator_session";
     const saveSession=(code,role)=>localStorage.setItem(SESSION_KEY,JSON.stringify({code,role}));
     const clearSession=()=>localStorage.removeItem(SESSION_KEY);
@@ -553,6 +744,7 @@
       document.querySelectorAll(".action-btn").forEach(b=>b.classList.remove("selected","disabled"));
     }
     function onActionChosen(action){
+      if(skirmishMode){ skirmishOnActionChosen(action); return; }
       if(myAction)return; myAction=action;
       document.querySelectorAll(".action-btn").forEach(b=>{b.classList.toggle("selected",b.dataset.action===action);b.classList.toggle("disabled",b.dataset.action!==action);});
       $("action-picker").style.display="none";$("action-status").style.display="";$("action-waiting").style.display="none";
@@ -717,7 +909,9 @@
 
     function checkReady(){
       const ok=sel.name.trim()&&sel.weapon&&sel.armor;
-      $("btn-to-lobby").disabled=!ok; $("btn-join").disabled=!ok||!$("join-code").value.trim();
+      $("btn-to-lobby").disabled=!ok;
+      $("btn-skirmish").disabled=!ok;
+      $("btn-join").disabled=!ok||!$("join-code").value.trim();
     }
 
     function resetToSetup(){
@@ -725,6 +919,7 @@
       stopLobbyListener();
       if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null;}
       clearSession();
+      resetSkirmish();
       myRole=null;myCode=null;roomRef=null;logCount=0;roomSnap=null;resolving=false;myAction=null;
       sel={name:playerProfile.name||"",weapon:null,armor:null};
       $("join-code").value="";
@@ -738,6 +933,7 @@
       buildWeaponGrid(); buildArmorGrid();
 
       $("join-code").oninput=()=>checkReady();
+      $("btn-skirmish").onclick=()=>startSkirmish();
       $("btn-to-lobby").onclick=()=>{showOnly("screen-lobby");startLobbyListener();};
       $("btn-lobby-back").onclick=()=>{stopLobbyListener();showOnly("screen-setup");};
       $("btn-leaderboard").onclick=()=>{showOnly("screen-leaderboard");showLeaderboard();};
@@ -862,7 +1058,8 @@
     </div>
     <div class="setup-card">
       <div class="section-label">Enter the Arena</div>
-      <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">Enter the Arena</button>
+      <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">⚔ Challenge a Player</button>
+      <button class="btn btn-skirmish" id="btn-skirmish" disabled style="width:100%;margin-top:0.5rem">🤖 Skirmish vs CPU</button>
       <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem">
         <button class="btn" id="btn-leaderboard" style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">🏆 Leaderboard</button>
         <button class="btn" id="btn-shop"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">⚙ Shop</button>
@@ -939,6 +1136,7 @@
 
   <!-- BATTLE -->
   <div id="screen-battle" style="display:none">
+    <div id="skirmish-badge" class="skirmish-badge" style="display:none">🤖 Skirmish — CPU Match · Stats Save</div>
     <div class="battle-header">
       <div class="fighter-block" id="p1-block"></div>
       <div class="round-badge"><div class="r-num" id="round-num">1</div><div class="r-label">Round</div></div>
