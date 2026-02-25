@@ -59,6 +59,12 @@
     };
     const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25, rankBonus:[15,10,5] };
 
+    const BORDER_STYLES = {
+      gold:  "border:1.5px solid #c9a84c; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(201,168,76,0.08);",
+      blood: "border:1.5px solid #cc2222; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(204,34,34,0.08);",
+      iron:  "border:1.5px solid #7a8090; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(120,128,144,0.08);",
+    };
+
     /* ── SHOP CATALOGUE ───────────────────────────────────────────────────── */
     // Each item: id, category, name, desc, cost, value (what gets saved)
     const SHOP_ITEMS = [
@@ -78,14 +84,28 @@
       { id:"sym_fleur",     cat:"symbol", name:"Fleur Mark",     desc:"⚜ — noble blood, iron will.",       cost:100, value:"⚜" },
       // ── Name Change (consumable — always purchasable)
       { id:"name_change",   cat:"rename", name:"Name Change",    desc:"Change your gladiator name permanently.", cost:50, value:null },
+      // ── Profile Borders
+      { id:"border_gold",   cat:"border", name:"Gold Border",    desc:"A gilded frame around your leaderboard entry.",  cost:150, value:"gold" },
+      { id:"border_blood",  cat:"border", name:"Blood Border",   desc:"A crimson border — the mark of a killer.",       cost:150, value:"blood" },
+      { id:"border_iron",   cat:"border", name:"Iron Border",    desc:"Forged iron — simple, unyielding.",              cost:100, value:"iron" },
+      // ── Arena Taunts
+      { id:"taunt_1", cat:"taunt", name:"\"Kneel.\"",            desc:"Sent to your opponent at the start of each round.", cost:80,  value:"Kneel." },
+      { id:"taunt_2", cat:"taunt", name:"\"The crowd thirsts.\"",desc:"Sent to your opponent at the start of each round.", cost:80,  value:"The crowd thirsts." },
+      { id:"taunt_3", cat:"taunt", name:"\"I've buried better.\"",desc:"Sent to your opponent at the start of each round.",cost:80,  value:"I've buried better." },
+      { id:"taunt_4", cat:"taunt", name:"\"Fortune favours me.\"",desc:"Sent to your opponent at the start of each round.",cost:100, value:"Fortune favours me." },
+      { id:"taunt_5", cat:"taunt", name:"\"Your gods won't save you.\"",desc:"Sent to your opponent at the start of each round.",cost:120,value:"Your gods won't save you." },
+      // ── Victory Trail
+      { id:"trail_gold",   cat:"trail", name:"Gold Trail",   desc:"Your victor name shimmers in gold sparks on the results screen.", cost:200, value:"gold" },
+      { id:"trail_blood",  cat:"trail", name:"Blood Trail",  desc:"Your victor name drips red on the results screen.",               cost:200, value:"blood" },
+      { id:"trail_ice",    cat:"trail", name:"Frost Trail",  desc:"Your victor name crackles with blue ice on the results screen.",  cost:200, value:"ice" },
       // ── Coming Soon
-      { id:"cs_border",     cat:"soon",   name:"Profile Border", desc:"A decorative border in the leaderboard.", cost:200, value:null },
-      { id:"cs_taunt",      cat:"soon",   name:"Arena Taunt",    desc:"Send a taunt to your opponent each round.", cost:200, value:null },
-      { id:"cs_trail",      cat:"soon",   name:"Victory Trail",  desc:"Sparks trail your name on the leaderboard.", cost:300, value:null },
+      { id:"cs_weapon",  cat:"soon", name:"Weapon Skin",   desc:"Reskin your weapon's name and emoji in battle.", cost:250, value:null },
+      { id:"cs_banner",  cat:"soon", name:"Arena Banner",  desc:"A personal banner shown in the lobby when you host.", cost:300, value:null },
+      { id:"cs_title",   cat:"soon", name:"Title",         desc:"A prefix title before your name — The Unbroken, Ironclad, and more.", cost:200, value:null },
     ];
 
     /* ── PLAYER PROFILE (in-memory cache) ────────────────────────────────── */
-    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, owned:[], activeColor:null, activeSymbol:null, linked:false };
+    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, owned:[], activeColor:null, activeSymbol:null, activeBorder:null, activeTaunt:null, activeTrail:null, linked:false };
 
     function formatDisplayName(name, profile) {
       const sym   = profile?.activeSymbol || null;
@@ -124,6 +144,10 @@
       let p1Crits=0, p2Crits=0;
 
       logs.push({type:"event",text:event.text});
+
+      // Arena taunts — shown at round start
+      if(p1.activeTaunt) logs.push({type:"taunt",who:p1.name,text:`${p1.name}: "${p1.activeTaunt}"`});
+      if(p2.activeTaunt) logs.push({type:"taunt",who:p2.name,text:`${p2.name}: "${p2.activeTaunt}"`});
       if(effect==="fire"){p1.hp-=event.damage;p2.hp-=event.damage;logs.push({type:"env",text:`Both fighters take ${event.damage} fire damage.`});}
       const daggerLucky=Math.random()<0.5?"p1":"p2";
       const executeLucky=Math.random()<0.5?"p1":"p2";
@@ -262,7 +286,10 @@
       const snap=await get(ref(db,`players/${uid}`));
       if(snap.exists()){
         playerProfile={...playerProfile,...snap.val()};
-        if(!playerProfile.owned) playerProfile.owned=[];
+        if(!playerProfile.owned)       playerProfile.owned=[];
+        if(!playerProfile.activeBorder)playerProfile.activeBorder=null;
+        if(!playerProfile.activeTaunt) playerProfile.activeTaunt=null;
+        if(!playerProfile.activeTrail) playerProfile.activeTrail=null;
       }
     }
 
@@ -330,45 +357,72 @@
       const cats=[
         {key:"color",  label:"Name Colors"},
         {key:"symbol", label:"Name Symbols"},
+        {key:"border", label:"Profile Borders"},
+        {key:"taunt",  label:"Arena Taunts"},
+        {key:"trail",  label:"Victory Trails"},
         {key:"rename", label:"Name Change"},
         {key:"soon",   label:"Coming Soon"},
       ];
 
+      // Track which categories are open (persist across rebuilds)
+      if(!buildShop._open) buildShop._open={color:true,symbol:true,border:false,taunt:false,trail:false,rename:false,soon:false};
+      const open=buildShop._open;
+
       cats.forEach(cat=>{
         const items=SHOP_ITEMS.filter(i=>i.cat===cat.key);
+        const isOpen=open[cat.key];
+
         const header=document.createElement("div");
-        header.className="shop-cat-header";
-        header.textContent=cat.label;
+        header.className="shop-cat-header collapsible";
+        header.innerHTML=`<span>${cat.label}</span><span class="shop-cat-arrow">${isOpen?"▲":"▼"}</span>`;
+        header.onclick=()=>{
+          open[cat.key]=!open[cat.key];
+          buildShop();
+        };
         wrap.appendChild(header);
+
+        if(!isOpen) return; // collapsed — skip rendering items
+
+        const group=document.createElement("div");
+        group.className="shop-cat-group";
+        wrap.appendChild(group);
 
         items.forEach(item=>{
           const isOwned=owned.includes(item.id);
           const isSoon=item.cat==="soon";
           const isRename=item.cat==="rename";
-          const isActiveColor=playerProfile.activeColor===item.value&&item.cat==="color";
+          const isActiveColor =playerProfile.activeColor ===item.value&&item.cat==="color";
           const isActiveSymbol=playerProfile.activeSymbol===item.value&&item.cat==="symbol";
-          const isActive=isActiveColor||isActiveSymbol;
+          const isActiveBorder=playerProfile.activeBorder===item.value&&item.cat==="border";
+          const isActiveTaunt =playerProfile.activeTaunt ===item.value&&item.cat==="taunt";
+          const isActiveTrail =playerProfile.activeTrail ===item.value&&item.cat==="trail";
+          const isActive=isActiveColor||isActiveSymbol||isActiveBorder||isActiveTaunt||isActiveTrail;
           const canAfford=gold>=item.cost;
 
           const card=document.createElement("div");
           card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}`;
 
           let badge="";
-          if(isSoon)          badge=`<span class="shop-badge soon-badge">Soon</span>`;
-          else if(isActive)   badge=`<span class="shop-badge active-badge">Active</span>`;
+          if(isSoon)                  badge=`<span class="shop-badge soon-badge">Soon</span>`;
+          else if(isActive)           badge=`<span class="shop-badge active-badge">Active</span>`;
           else if(isOwned&&!isRename) badge=`<span class="shop-badge owned-badge">Owned</span>`;
 
           let preview="";
-          if(item.cat==="color") preview=`<span class="shop-preview" style="color:${item.value}">${playerProfile.name||"Gladiator"}</span>`;
-          if(item.cat==="symbol")preview=`<span class="shop-preview">${item.value} ${playerProfile.name||"Gladiator"}</span>`;
+          if(item.cat==="color")  preview=`<span class="shop-preview" style="color:${item.value}">${playerProfile.name||"Gladiator"}</span>`;
+          if(item.cat==="symbol") preview=`<span class="shop-preview">${item.value} ${playerProfile.name||"Gladiator"}</span>`;
+          if(item.cat==="border"){
+            const bStyle=BORDER_STYLES[item.value]||"";
+            preview=`<span class="shop-preview lb-border-preview" style="${bStyle}">${playerProfile.name||"Gladiator"}</span>`;
+          }
+          if(item.cat==="taunt")  preview=`<span class="shop-preview" style="font-style:italic;opacity:0.7">"${item.value}"</span>`;
+          if(item.cat==="trail")  preview=`<span class="shop-preview trail-preview trail-${item.value}">${playerProfile.name||"Gladiator"}</span>`;
 
-          let btnLabel="";
-          let btnClass="btn shop-btn";
-          if(isSoon)                   {btnLabel="Coming Soon";btnClass+=" disabled";}
-          else if(isActive)            {btnLabel="Deactivate"; btnClass+=" shop-btn-deactivate";}
-          else if(isOwned&&!isRename)  {btnLabel="Equip";      btnClass+=" shop-btn-equip";}
-          else if(!canAfford)          {btnLabel=`⚙ ${item.cost}`;btnClass+=" disabled";}
-          else                         {btnLabel=`Buy ⚙ ${item.cost}`;}
+          let btnLabel="", btnClass="btn shop-btn";
+          if(isSoon)                  {btnLabel="Coming Soon"; btnClass+=" disabled";}
+          else if(isActive)           {btnLabel="Deactivate";  btnClass+=" shop-btn-deactivate";}
+          else if(isOwned&&!isRename) {btnLabel="Equip";       btnClass+=" shop-btn-equip";}
+          else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;btnClass+=" disabled";}
+          else                        {btnLabel=`Buy ⚙ ${item.cost}`;}
 
           card.innerHTML=`
             <div class="shop-item-top">
@@ -381,34 +435,36 @@
             </div>
             <button class="${btnClass}" ${isSoon||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
 
-          // Button action
           if(!isSoon){
             card.querySelector("button").onclick=async()=>{
               if(isActive){
-                // Deactivate
                 const updates={};
-                if(item.cat==="color")  {updates.activeColor=null; playerProfile.activeColor=null;}
-                if(item.cat==="symbol") {updates.activeSymbol=null;playerProfile.activeSymbol=null;}
+                if(item.cat==="color")  {updates.activeColor=null;  playerProfile.activeColor=null;}
+                if(item.cat==="symbol") {updates.activeSymbol=null; playerProfile.activeSymbol=null;}
+                if(item.cat==="border") {updates.activeBorder=null; playerProfile.activeBorder=null;}
+                if(item.cat==="taunt")  {updates.activeTaunt=null;  playerProfile.activeTaunt=null;}
+                if(item.cat==="trail")  {updates.activeTrail=null;  playerProfile.activeTrail=null;}
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser); showToast(`${item.name} deactivated.`);
               } else if(isOwned&&!isRename){
-                // Equip
                 const updates={};
-                if(item.cat==="color")  {updates.activeColor=item.value; playerProfile.activeColor=item.value;}
-                if(item.cat==="symbol") {updates.activeSymbol=item.value;playerProfile.activeSymbol=item.value;}
+                if(item.cat==="color")  {updates.activeColor=item.value;  playerProfile.activeColor=item.value;}
+                if(item.cat==="symbol") {updates.activeSymbol=item.value; playerProfile.activeSymbol=item.value;}
+                if(item.cat==="border") {updates.activeBorder=item.value; playerProfile.activeBorder=item.value;}
+                if(item.cat==="taunt")  {updates.activeTaunt=item.value;  playerProfile.activeTaunt=item.value;}
+                if(item.cat==="trail")  {updates.activeTrail=item.value;  playerProfile.activeTrail=item.value;}
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser); showToast(`${item.name} equipped!`);
               } else if(canAfford){
-                // Buy
-                if(item.cat==="rename"){
-                  showNameChangeModal(); return;
-                }
-                // Deduct gold, add to owned, equip immediately
+                if(item.cat==="rename"){showNameChangeModal();return;}
                 const newGold=(playerProfile.gold||0)-item.cost;
                 const newOwned=[...(playerProfile.owned||[]),item.id];
-                const updates={gold:newGold, owned:newOwned};
-                if(item.cat==="color")  {updates.activeColor=item.value; playerProfile.activeColor=item.value;}
-                if(item.cat==="symbol") {updates.activeSymbol=item.value;playerProfile.activeSymbol=item.value;}
+                const updates={gold:newGold,owned:newOwned};
+                if(item.cat==="color")  {updates.activeColor=item.value;  playerProfile.activeColor=item.value;}
+                if(item.cat==="symbol") {updates.activeSymbol=item.value; playerProfile.activeSymbol=item.value;}
+                if(item.cat==="border") {updates.activeBorder=item.value; playerProfile.activeBorder=item.value;}
+                if(item.cat==="taunt")  {updates.activeTaunt=item.value;  playerProfile.activeTaunt=item.value;}
+                if(item.cat==="trail")  {updates.activeTrail=item.value;  playerProfile.activeTrail=item.value;}
                 playerProfile.gold=newGold; playerProfile.owned=newOwned;
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser);
@@ -416,11 +472,10 @@
               }
             };
           }
-          wrap.appendChild(card);
+          group.appendChild(card);
         });
       });
 
-      // Gold display in shop header
       $("shop-gold-display").textContent=`⚙ ${playerProfile.gold||0} gold`;
     }
 
@@ -473,7 +528,8 @@
       board.forEach((p,i)=>{
         const row=document.createElement("div");
         row.className="lb-row"+(p.uid===currentUser?.uid?" lb-me":"");
-        const displayName=formatDisplayName(p.name||"Unknown",p);
+        const bStyle=p.activeBorder?BORDER_STYLES[p.activeBorder]||"":"";
+        const displayName=`<span class="lb-name-inner"${bStyle?` style="${bStyle}"`:""}>${formatDisplayName(p.name||"Unknown",p)}</span>`;
         row.innerHTML=`
           <div class="lb-rank">${["🥇","🥈","🥉"][i]||`#${i+1}`}</div>
           <div class="lb-name">${displayName}${p.linked?" <span class='lb-linked'>G</span>":""}</div>
@@ -543,8 +599,8 @@
       const cpuName  =CPU_NAMES [Math.floor(Math.random()*CPU_NAMES.length)];
 
       skirmishState={
-        p1:{ name:sel.name, weapon:sel.weapon, armor:sel.armor, hp:ARMORS[sel.armor].hp },
-        p2:{ name:cpuName,  weapon:cpuWeapon,  armor:cpuArmor,  hp:ARMORS[cpuArmor].hp },
+        p1:{ name:sel.name, weapon:sel.weapon, armor:sel.armor, hp:ARMORS[sel.armor].hp, activeTaunt:playerProfile.activeTaunt||null },
+        p2:{ name:cpuName,  weapon:cpuWeapon,  armor:cpuArmor,  hp:ARMORS[cpuArmor].hp,  activeTaunt:null },
         round:1,
         eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),
         allLogs:[],
@@ -740,13 +796,14 @@
     function stopLobbyListener(){if(lobbyUnsub){off(ref(db,"rooms"));lobbyUnsub=null;}}
 
     /* ── LOG RENDERING ────────────────────────────────────────────────────── */
-    function tagFor(type){return({hit:["HIT","tag-hit"],weak:["GLANCING","tag-miss"],crit:["CRITICAL","tag-crit"],block:["BLOCK","tag-block"],dodge:["DODGE","tag-dodge"],heavy:["BRACE","tag-heavy"],heal:["HEAL","tag-heal"],reveal:["REVEAL","tag-reveal"]})[type]||["—","tag-env"];}
+    function tagFor(type){return({hit:["HIT","tag-hit"],weak:["GLANCING","tag-miss"],crit:["CRITICAL","tag-crit"],block:["BLOCK","tag-block"],dodge:["DODGE","tag-dodge"],heavy:["BRACE","tag-heavy"],heal:["HEAL","tag-heal"],reveal:["REVEAL","tag-reveal"],taunt:["TAUNT","tag-taunt"]})[type]||["—","tag-env"];}
 
     function buildLogRow(e){
       const row=document.createElement("div");
       if(e.type==="event"){row.className="log-row log-event";row.innerHTML=`<div class="log-who"><span class="who-name">Arena</span><span class="who-sub">Round Event</span></div><div class="log-text">${e.text}</div><div class="log-tag-cell"><span class="log-tag tag-event">Event</span></div>`;return row;}
       if(e.type==="env"){row.className="log-row log-env";row.innerHTML=`<div class="log-who"><span class="who-name">Arena</span><span class="who-sub">Effect</span></div><div class="log-text">${e.text}</div><div class="log-tag-cell"><span class="log-tag tag-env">Effect</span></div>`;return row;}
       if(e.type==="reveal"){row.className="log-row log-reveal";row.innerHTML=`<div class="log-who"><span class="who-name">Reveal</span><span class="who-sub">Both chose</span></div><div class="log-text">${e.text}</div><div class="log-tag-cell"><span class="log-tag tag-reveal">Reveal</span></div>`;return row;}
+      if(e.type==="taunt"){row.className="log-row log-taunt";row.innerHTML=`<div class="log-who"><span class="who-name">${e.who||"—"}</span><span class="who-sub">Taunt</span></div><div class="log-text" style="font-style:italic">${e.text}</div><div class="log-tag-cell"><span class="log-tag tag-taunt">Taunt</span></div>`;return row;}
       const [tagText,tagClass]=tagFor(e.type);
       row.className="log-row";
       row.innerHTML=`<div class="log-who"><span class="who-name">${e.who||"—"}</span><span class="who-sub">${e.weapon||""}</span><span class="who-sub">${e.armor||""}</span></div><div class="log-text">${e.text}</div><div class="log-tag-cell"><span class="log-tag ${tagClass}">${tagText}</span></div>`;
@@ -792,7 +849,12 @@
       const code=Math.random().toString(36).substr(2,5).toUpperCase();
       myCode=code; myRole="p1";
       roomRef=ref(db,`rooms/${code}`);
-      await set(roomRef,{code,phase:"waiting",p1:{...data,hp:ARMORS[data.armor].hp,uid:currentUser?.uid||null},p2:null,round:1,eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),allLogs:[],gameOver:false,winner:null,p1action:null,p2action:null,resolveState:"idle"});
+      const p1data={...data, hp:ARMORS[data.armor].hp, uid:currentUser?.uid||null,
+        activeTaunt:playerProfile.activeTaunt||null,
+        activeTrail:playerProfile.activeTrail||null,
+        activeBorder:playerProfile.activeBorder||null,
+      };
+      await set(roomRef,{code,phase:"waiting",p1:p1data,p2:null,round:1,eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),allLogs:[],gameOver:false,winner:null,p1action:null,p2action:null,resolveState:"idle",wasLockedP1:false,wasLockedP2:false});
       stopLobbyListener(); saveSession(code,"p1");
       $("room-code-display").textContent=code; showOnly("screen-waiting"); listenRoom();
     }
@@ -804,7 +866,12 @@
       if(!snap.exists()){alert("Room not found.");return;}
       const room=snap.val();
       if(room.p2){alert("Room is already full.");return;}
-      await update(roomRef,{p2:{...data,hp:ARMORS[data.armor].hp,uid:currentUser?.uid||null},phase:"battle"});
+      const p2data={...data, hp:ARMORS[data.armor].hp, uid:currentUser?.uid||null,
+        activeTaunt:playerProfile.activeTaunt||null,
+        activeTrail:playerProfile.activeTrail||null,
+        activeBorder:playerProfile.activeBorder||null,
+      };
+      await update(roomRef,{p2:p2data,phase:"battle"});
       stopLobbyListener(); saveSession(code,"p2"); listenRoom();
     }
 
@@ -881,6 +948,9 @@
       const w=room.winner,wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
       $("victor-name").textContent=w==="draw"?"DRAW":wd.name;
+      const victorEl=$("victor-name");
+      victorEl.className="victor-name";
+      if(wd?.activeTrail) victorEl.classList.add(`trail-${wd.activeTrail}`);
       $("victor-sub").textContent=wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
       $("result-p1-hp").textContent=`${Math.max(0,room.p1.hp)} HP`;
       $("result-p1-name").textContent=room.p1.name;

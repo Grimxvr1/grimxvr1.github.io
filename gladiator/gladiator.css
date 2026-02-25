@@ -988,7 +988,26 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 }
 .modal-actions .btn { flex: 1; }
 
-.modal-divider {
+.shop-cat-header.collapsible {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: color 0.15s;
+}
+.shop-cat-header.collapsible:hover { color: var(--gold); }
+
+.shop-cat-arrow {
+  font-size: 0.55rem;
+  color: var(--gold-dim);
+  transition: color 0.15s;
+}
+.shop-cat-header.collapsible:hover .shop-cat-arrow { color: var(--gold); }
+
+.shop-cat-group {
+  margin-bottom: 0.5rem;
+}
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -1044,6 +1063,37 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   border-radius: 1px;
   margin-left: 0.4rem;
   vertical-align: middle;
+}
+
+/* ── TAUNT LOG ROW ───────────────────────────────────────────────────────────── */
+.log-taunt { background: rgba(184,115,51,0.08) !important; }
+.tag-taunt { background: rgba(184,115,51,0.2); color: #c87830; border-color: rgba(184,115,51,0.4); }
+
+/* ── VICTORY TRAILS ─────────────────────────────────────────────────────────── */
+@keyframes trail-shimmer-gold {
+  0%,100% { text-shadow: 0 0 12px #c9a84c, 0 0 30px rgba(201,168,76,0.5); color: #f0d870; }
+  50%      { text-shadow: 0 0 24px #f0d870, 0 0 60px rgba(240,216,112,0.8); color: #fff8c0; }
+}
+@keyframes trail-shimmer-blood {
+  0%,100% { text-shadow: 0 0 12px #cc2222, 0 0 30px rgba(204,34,34,0.5); color: #cc4444; }
+  50%      { text-shadow: 0 0 24px #ff4444, 0 0 60px rgba(255,68,68,0.8);  color: #ff8888; }
+}
+@keyframes trail-shimmer-ice {
+  0%,100% { text-shadow: 0 0 12px #6ab4d0, 0 0 30px rgba(106,180,208,0.5); color: #88ccee; }
+  50%      { text-shadow: 0 0 24px #aaddff, 0 0 60px rgba(170,221,255,0.8); color: #ccf0ff; }
+}
+
+.trail-gold  { animation: trail-shimmer-gold  1.8s ease-in-out infinite; }
+.trail-blood { animation: trail-shimmer-blood 1.8s ease-in-out infinite; }
+.trail-ice   { animation: trail-shimmer-ice   1.8s ease-in-out infinite; }
+
+/* Trail shop previews (smaller, no full victor sizing) */
+.trail-preview {
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
 }
 
 /* ── SKIRMISH ────────────────────────────────────────────────────────────────── */
