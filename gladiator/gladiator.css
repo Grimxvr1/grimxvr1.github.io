@@ -1083,9 +1083,9 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   50%      { text-shadow: 0 0 24px #aaddff, 0 0 60px rgba(170,221,255,0.8); color: #ccf0ff; }
 }
 
-.trail-gold  { animation: trail-shimmer-gold  1.8s ease-in-out infinite; }
-.trail-blood { animation: trail-shimmer-blood 1.8s ease-in-out infinite; }
-.trail-ice   { animation: trail-shimmer-ice   1.8s ease-in-out infinite; }
+.trail-gold  { animation: trail-shimmer-gold  1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
+.trail-blood { animation: trail-shimmer-blood 1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
+.trail-ice   { animation: trail-shimmer-ice   1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
 
 /* Trail shop previews (smaller, no full victor sizing) */
 .trail-preview {
