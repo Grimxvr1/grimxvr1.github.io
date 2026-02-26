@@ -1141,6 +1141,23 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   border-radius: 1px;
 }
 
+.waiting-timer {
+  margin-top: 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  transition: color 0.3s;
+}
+.waiting-timer-urgent {
+  color: var(--blood2);
+  animation: urgentPulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes urgentPulse {
+  from { opacity: 1; }
+  to   { opacity: 0.5; }
+}
+
 /* ── LEVEL & XP ──────────────────────────────────────────────────────────────── */
 .auth-level {
   font-family: 'Cinzel', serif;

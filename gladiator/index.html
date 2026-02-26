@@ -1011,6 +1011,41 @@
     let myRole=null,myCode=null,roomRef=null,logCount=0,roomSnap=null;
     let sel={name:"",weapon:null,armor:null};
 
+    /* ── WAITING ROOM TIMER ───────────────────────────────────────────────── */
+    let waitingTimer=null;
+
+    function startWaitingTimer(){
+      let secondsLeft=60;
+      updateWaitingTimerDisplay(secondsLeft);
+      waitingTimer=setInterval(async()=>{
+        secondsLeft--;
+        updateWaitingTimerDisplay(secondsLeft);
+        if(secondsLeft<=0){
+          stopWaitingTimer();
+          // Delete the room and return to setup
+          if(roomRef) await set(roomRef,null).catch(()=>{});
+          clearSession();
+          myRole=null; myCode=null; roomRef=null;
+          showOnly("screen-setup");
+          showToast("No challenger arrived. The room has closed.",true);
+        }
+      },1000);
+    }
+
+    function stopWaitingTimer(){
+      if(waitingTimer){ clearInterval(waitingTimer); waitingTimer=null; }
+      const el=$("waiting-timer");
+      if(el) el.style.display="none";
+    }
+
+    function updateWaitingTimerDisplay(seconds){
+      const el=$("waiting-timer");
+      if(!el) return;
+      el.style.display="";
+      el.textContent=`Room closes in ${seconds}s`;
+      el.className="waiting-timer"+(seconds<=10?" waiting-timer-urgent":"");
+    }
+
     /* ── FIREBASE ROOM OPS ────────────────────────────────────────────────── */
     async function createRoom(data){
       const code=Math.random().toString(36).substr(2,5).toUpperCase();
@@ -1024,7 +1059,9 @@
       await set(roomRef,{code,phase:"waiting",p1:p1data,p2:null,round:1,eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),allLogs:[],gameOver:false,winner:null,p1action:null,p2action:null,resolveState:"idle",wasLockedP1:false,wasLockedP2:false});
       stopLobbyListener(); saveSession(code,"p1");
       postAnnouncement(formatDisplayName(data.name, playerProfile).replace(/<[^>]+>/g,""));
-      $("room-code-display").textContent=code; showOnly("screen-waiting"); listenRoom();
+      $("room-code-display").textContent=code; showOnly("screen-waiting");
+      startWaitingTimer();
+      listenRoom();
     }
 
     async function joinRoom(data,code){
@@ -1051,6 +1088,7 @@
         if(stored.length>logCount){appendLogs(stored.slice(logCount),$("log-scroll"));logCount=stored.length;triggerSparks();}
         if(room.gameOver){handleGameOver(room);return;}
         if((room.phase==="battle"||room.phase==="waiting")&&room.p1&&room.p2){
+          stopWaitingTimer();
           showOnly("screen-battle"); updateBattle(room);
           const myPick=room[myRole==="p1"?"p1action":"p2action"];
           const oppPick=room[myRole==="p1"?"p2action":"p1action"];
@@ -1207,6 +1245,7 @@
     function resetToSetup(){
       if(roomRef)off(roomRef);
       stopLobbyListener();
+      stopWaitingTimer();
       if(countdownTimer){clearInterval(countdownTimer);countdownTimer=null;}
       clearSession();
       resetSkirmish();
@@ -1233,6 +1272,14 @@
       $("btn-shop-back").onclick=()=>showOnly("screen-setup");
       $("btn-create").onclick=()=>createRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor});
       $("btn-join").onclick  =()=>joinRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor},$("join-code").value);
+      $("btn-cancel-waiting").onclick=async()=>{
+        stopWaitingTimer();
+        if(roomRef) await set(roomRef,null).catch(()=>{});
+        clearSession();
+        myRole=null; myCode=null; roomRef=null;
+        showOnly("screen-setup");
+        showToast("Room cancelled.");
+      };
       document.querySelectorAll(".action-btn").forEach(btn=>{btn.onclick=()=>onActionChosen(btn.dataset.action);});
       $("btn-play-again").onclick=resetToSetup;
       $("btn-leave-game").onclick=()=>{if(!confirm("Leave this game? Your opponent will claim victory."))return;resetToSetup();};
@@ -1425,6 +1472,8 @@
       <div class="room-code-display" id="room-code-display">-----</div>
       <div class="text-muted mt-1">Share this code with your opponent</div>
       <div class="mt-2 waiting-msg"><span class="spinner"></span> Awaiting challenger…</div>
+      <div id="waiting-timer" class="waiting-timer" style="display:none"></div>
+      <button class="btn btn-cancel-waiting" id="btn-cancel-waiting" style="margin-top:1.2rem;opacity:0.6;font-size:0.65rem">✕ Cancel Room</button>
     </div>
   </div>
 
