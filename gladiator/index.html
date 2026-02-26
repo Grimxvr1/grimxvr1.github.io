@@ -769,10 +769,16 @@
       const text=announceQueue.shift();
       const ticker=$("announce-ticker");
       const inner=$("announce-inner");
+
+      // Reset animation by removing and re-adding the element
       inner.textContent=text;
+      inner.style.animation="none";
+      inner.offsetWidth; // force reflow
+      inner.style.animation="";
+
       ticker.classList.remove("announce-hide");
       ticker.classList.add("announce-show");
-      // Duration: let the scroll complete (~8s) then hide
+
       setTimeout(()=>{
         ticker.classList.remove("announce-show");
         ticker.classList.add("announce-hide");

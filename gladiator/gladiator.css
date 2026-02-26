@@ -1175,7 +1175,7 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   letter-spacing: 0.18em;
   color: var(--gold);
   text-transform: uppercase;
-  animation: ticker-scroll 8s linear forwards;
+  animation: ticker-scroll 8s linear;
   padding: 0 2rem;
 }
 
