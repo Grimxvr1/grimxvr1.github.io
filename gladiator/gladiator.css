@@ -1071,21 +1071,21 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 
 /* ── VICTORY TRAILS ─────────────────────────────────────────────────────────── */
 @keyframes trail-shimmer-gold {
-  0%,100% { text-shadow: 0 0 12px #c9a84c, 0 0 30px rgba(201,168,76,0.5); color: #f0d870; }
-  50%      { text-shadow: 0 0 24px #f0d870, 0 0 60px rgba(240,216,112,0.8); color: #fff8c0; }
+  0%,100% { -webkit-text-fill-color: #f0d870; text-shadow: 0 0 12px #c9a84c, 0 0 30px rgba(201,168,76,0.5); }
+  50%      { -webkit-text-fill-color: #fff8c0; text-shadow: 0 0 24px #f0d870, 0 0 60px rgba(240,216,112,0.8); }
 }
 @keyframes trail-shimmer-blood {
-  0%,100% { text-shadow: 0 0 12px #cc2222, 0 0 30px rgba(204,34,34,0.5); color: #cc4444; }
-  50%      { text-shadow: 0 0 24px #ff4444, 0 0 60px rgba(255,68,68,0.8);  color: #ff8888; }
+  0%,100% { -webkit-text-fill-color: #cc4444; text-shadow: 0 0 12px #cc2222, 0 0 30px rgba(204,34,34,0.5); }
+  50%      { -webkit-text-fill-color: #ff8888; text-shadow: 0 0 24px #ff4444, 0 0 60px rgba(255,68,68,0.8); }
 }
 @keyframes trail-shimmer-ice {
-  0%,100% { text-shadow: 0 0 12px #6ab4d0, 0 0 30px rgba(106,180,208,0.5); color: #88ccee; }
-  50%      { text-shadow: 0 0 24px #aaddff, 0 0 60px rgba(170,221,255,0.8); color: #ccf0ff; }
+  0%,100% { -webkit-text-fill-color: #88ccee; text-shadow: 0 0 12px #6ab4d0, 0 0 30px rgba(106,180,208,0.5); }
+  50%      { -webkit-text-fill-color: #ccf0ff; text-shadow: 0 0 24px #aaddff, 0 0 60px rgba(170,221,255,0.8); }
 }
 
-.trail-gold  { animation: trail-shimmer-gold  1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
-.trail-blood { animation: trail-shimmer-blood 1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
-.trail-ice   { animation: trail-shimmer-ice   1.8s ease-in-out infinite; -webkit-text-fill-color: unset; background: none; }
+.trail-gold  { animation: trail-shimmer-gold  1.8s ease-in-out infinite; background: none; }
+.trail-blood { animation: trail-shimmer-blood 1.8s ease-in-out infinite; background: none; }
+.trail-ice   { animation: trail-shimmer-ice   1.8s ease-in-out infinite; background: none; }
 
 /* Trail shop previews (smaller, no full victor sizing) */
 .trail-preview {
