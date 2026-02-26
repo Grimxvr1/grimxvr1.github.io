@@ -1141,6 +1141,44 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   border-radius: 1px;
 }
 
+/* ── ANNOUNCEMENT TICKER ─────────────────────────────────────────────────────── */
+.announce-ticker {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 999;
+  background: linear-gradient(90deg, transparent, rgba(20,15,8,0.97) 8%, rgba(20,15,8,0.97) 92%, transparent);
+  border-bottom: 1px solid rgba(201,168,76,0.3);
+  padding: 0.45rem 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.announce-ticker.announce-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.announce-ticker.announce-hide {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+@keyframes ticker-scroll {
+  0%   { transform: translateX(110vw); }
+  100% { transform: translateX(-110%); }
+}
+.announce-ticker span {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-transform: uppercase;
+  animation: ticker-scroll 8s linear forwards;
+  padding: 0 2rem;
+}
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .armor-grid  { grid-template-columns: 1fr; }

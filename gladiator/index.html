@@ -8,7 +8,7 @@
 
   <script type="module">
     import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, off, update, runTransaction }
+    import { getDatabase, ref, set, get, onValue, off, update, runTransaction, push, query, limitToLast, onChildAdded }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
     import {
       getAuth, signInAnonymously, onAuthStateChanged,
@@ -746,6 +746,62 @@
       cpuMemory=[];
       $("skirmish-badge").style.display="none";
     }
+    /* ── ANNOUNCEMENTS ────────────────────────────────────────────────────── */
+    const ANNOUNCE_PHRASES = [
+      n => `⚔ ${n} has entered the arena — who dares challenge them?`,
+      n => `🛡 ${n} seeks glory in the Gauntlet — step forward!`,
+      n => `🔥 The gates open for ${n} — a challenger awaits!`,
+      n => `💀 ${n} has taken the arena floor — face them if you dare!`,
+      n => `👑 ${n} demands a worthy opponent — answer the call!`,
+    ];
+
+    let announceQueue = [];
+    let announceRunning = false;
+
+    function queueAnnouncement(text){
+      announceQueue.push(text);
+      if(!announceRunning) runNextAnnouncement();
+    }
+
+    function runNextAnnouncement(){
+      if(!announceQueue.length){ announceRunning=false; return; }
+      announceRunning=true;
+      const text=announceQueue.shift();
+      const ticker=$("announce-ticker");
+      const inner=$("announce-inner");
+      inner.textContent=text;
+      ticker.classList.remove("announce-hide");
+      ticker.classList.add("announce-show");
+      // Duration: let the scroll complete (~8s) then hide
+      setTimeout(()=>{
+        ticker.classList.remove("announce-show");
+        ticker.classList.add("announce-hide");
+        setTimeout(()=>{ ticker.classList.remove("announce-hide"); runNextAnnouncement(); },500);
+      },8000);
+    }
+
+    async function postAnnouncement(gladiatorName){
+      const phrase=ANNOUNCE_PHRASES[Math.floor(Math.random()*ANNOUNCE_PHRASES.length)];
+      const text=phrase(gladiatorName);
+      const aRef=ref(db,"announcements");
+      const newRef=await push(aRef,{text, ts:Date.now()});
+      // Self-clean after 15s
+      setTimeout(()=>set(newRef,null).catch(()=>{}),15000);
+    }
+
+    function startAnnouncementListener(){
+      // Only listen to announcements created from now on
+      const aRef=query(ref(db,"announcements"),limitToLast(1));
+      const startTime=Date.now();
+      onChildAdded(aRef, snap=>{
+        const data=snap.val();
+        if(!data||!data.text)return;
+        // Ignore announcements older than when we started listening
+        if(data.ts && data.ts < startTime-2000) return;
+        queueAnnouncement(data.text);
+      });
+    }
+
     const SESSION_KEY="gladiator_session";
     const saveSession=(code,role)=>localStorage.setItem(SESSION_KEY,JSON.stringify({code,role}));
     const clearSession=()=>localStorage.removeItem(SESSION_KEY);
@@ -856,6 +912,7 @@
       };
       await set(roomRef,{code,phase:"waiting",p1:p1data,p2:null,round:1,eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),allLogs:[],gameOver:false,winner:null,p1action:null,p2action:null,resolveState:"idle",wasLockedP1:false,wasLockedP2:false});
       stopLobbyListener(); saveSession(code,"p1");
+      postAnnouncement(formatDisplayName(data.name, playerProfile).replace(/<[^>]+>/g,""));
       $("room-code-display").textContent=code; showOnly("screen-waiting"); listenRoom();
     }
 
@@ -1033,6 +1090,7 @@
     /* ── BOOT ─────────────────────────────────────────────────────────────── */
     document.addEventListener("DOMContentLoaded",async()=>{
       buildWeaponGrid(); buildArmorGrid();
+      startAnnouncementListener();
 
       $("join-code").oninput=()=>checkReady();
       $("btn-skirmish").onclick=()=>startSkirmish();
@@ -1093,6 +1151,9 @@
 <body>
 <div id="sparks"></div>
 <div id="toast" class="toast"></div>
+<div id="announce-ticker" class="announce-ticker">
+  <span id="announce-inner"></span>
+</div>
 
 <!-- NAME PROMPT MODAL -->
 <div id="modal-name-prompt" class="modal-overlay" style="display:none">
