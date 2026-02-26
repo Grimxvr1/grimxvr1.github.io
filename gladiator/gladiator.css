@@ -725,7 +725,7 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 /* ── LEADERBOARD ────────────────────────────────────────────────────────────── */
 .lb-row {
   display: grid;
-  grid-template-columns: 40px 1fr auto auto;
+  grid-template-columns: 40px 1fr auto auto auto;
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 0.6rem;
@@ -1141,6 +1141,74 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   border-radius: 1px;
 }
 
+/* ── LEVEL & XP ──────────────────────────────────────────────────────────────── */
+.auth-level {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.35);
+  background: rgba(201,168,76,0.08);
+  padding: 0.15rem 0.45rem;
+  border-radius: 1px;
+  white-space: nowrap;
+}
+
+.lb-level {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.xp-earned-panel {
+  border: 1px solid rgba(201,168,76,0.2);
+  background: rgba(201,168,76,0.05);
+  border-radius: 1px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.5rem 0;
+}
+.xp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.xp-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+}
+.xp-level {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+.xp-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(201,168,76,0.12);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.xp-sub {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-align: right;
+}
+
 /* ── ANNOUNCEMENT TICKER ─────────────────────────────────────────────────────── */
 .announce-ticker {
   position: fixed;
@@ -1187,6 +1255,6 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
   .join-row { grid-template-columns: 1fr; }
   .log-row  { grid-template-columns: 90px 1fr 70px; }
   .log-who  { padding: 0.6rem; }
-  .lb-row   { grid-template-columns: 36px 1fr auto; }
+  .lb-row   { grid-template-columns: 36px 1fr auto auto; }
   .lb-gold  { display: none; }
 }

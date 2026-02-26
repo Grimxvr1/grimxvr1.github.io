@@ -92,55 +92,64 @@
         styleEl.textContent="";
       }
     }
-    // Each item: id, category, name, desc, cost, value (what gets saved)
+    // Each item: id, category, name, desc, cost, value, minLevel (what gets saved)
     const SHOP_ITEMS = [
       // ── Name Colors
-      { id:"color_gold",    cat:"color",  name:"Golden Name",    desc:"Your name glows in arena gold.",      cost:80,  value:"#c9a84c" },
-      { id:"color_blood",   cat:"color",  name:"Blood Name",     desc:"A crimson name that demands fear.",   cost:80,  value:"#cc2222" },
-      { id:"color_ice",     cat:"color",  name:"Frost Name",     desc:"Cold blue — ice in your veins.",      cost:80,  value:"#6ab4d0" },
-      { id:"color_shadow",  cat:"color",  name:"Shadow Name",    desc:"Dark grey, barely visible.",          cost:80,  value:"#888888" },
-      { id:"color_emerald", cat:"color",  name:"Emerald Name",   desc:"Forest green champion.",              cost:80,  value:"#4caf7d" },
-      { id:"color_purple",  cat:"color",  name:"Royal Name",     desc:"Purple — worn only by champions.",    cost:120, value:"#b06cd0" },
-      // ── Symbols / Titles
-      { id:"sym_skull",     cat:"symbol", name:"Skull Mark",     desc:"☠ precedes your name in battle.",    cost:60,  value:"☠" },
-      { id:"sym_lightning", cat:"symbol", name:"Lightning Mark", desc:"⚡ — strike fast, strike first.",    cost:60,  value:"⚡" },
-      { id:"sym_fire",      cat:"symbol", name:"Flame Mark",     desc:"🔥 — the crowd calls your name.",    cost:60,  value:"🔥" },
-      { id:"sym_crown",     cat:"symbol", name:"Crown Mark",     desc:"👑 — worn only by true kings.",      cost:100, value:"👑" },
-      { id:"sym_dragon",    cat:"symbol", name:"Dragon Mark",    desc:"🐉 — ancient power at your side.",   cost:150, value:"🐉" },
-      { id:"sym_fleur",     cat:"symbol", name:"Fleur Mark",     desc:"⚜ — noble blood, iron will.",       cost:100, value:"⚜" },
+      { id:"color_gold",    cat:"color",  name:"Golden Name",    desc:"Your name glows in arena gold.",      cost:80,  value:"#c9a84c", minLevel:2 },
+      { id:"color_blood",   cat:"color",  name:"Blood Name",     desc:"A crimson name that demands fear.",   cost:80,  value:"#cc2222", minLevel:2 },
+      { id:"color_ice",     cat:"color",  name:"Frost Name",     desc:"Cold blue — ice in your veins.",      cost:80,  value:"#6ab4d0", minLevel:2 },
+      { id:"color_shadow",  cat:"color",  name:"Shadow Name",    desc:"Dark grey, barely visible.",          cost:80,  value:"#888888", minLevel:2 },
+      { id:"color_emerald", cat:"color",  name:"Emerald Name",   desc:"Forest green champion.",              cost:80,  value:"#4caf7d", minLevel:2 },
+      { id:"color_purple",  cat:"color",  name:"Royal Name",     desc:"Purple — worn only by champions.",    cost:120, value:"#b06cd0", minLevel:5 },
+      // ── Symbols
+      { id:"sym_skull",     cat:"symbol", name:"Skull Mark",     desc:"☠ precedes your name in battle.",    cost:60,  value:"☠",  minLevel:3 },
+      { id:"sym_lightning", cat:"symbol", name:"Lightning Mark", desc:"⚡ — strike fast, strike first.",    cost:60,  value:"⚡", minLevel:3 },
+      { id:"sym_fire",      cat:"symbol", name:"Flame Mark",     desc:"🔥 — the crowd calls your name.",    cost:60,  value:"🔥", minLevel:3 },
+      { id:"sym_crown",     cat:"symbol", name:"Crown Mark",     desc:"👑 — worn only by true kings.",      cost:100, value:"👑", minLevel:6 },
+      { id:"sym_dragon",    cat:"symbol", name:"Dragon Mark",    desc:"🐉 — ancient power at your side.",   cost:150, value:"🐉", minLevel:10 },
+      { id:"sym_fleur",     cat:"symbol", name:"Fleur Mark",     desc:"⚜ — noble blood, iron will.",       cost:100, value:"⚜", minLevel:6 },
       // ── Name Change (consumable — always purchasable)
-      { id:"name_change",   cat:"rename", name:"Name Change",    desc:"Change your gladiator name permanently.", cost:50, value:null },
+      { id:"name_change",   cat:"rename", name:"Name Change",    desc:"Change your gladiator name permanently.", cost:50, value:null, minLevel:1 },
       // ── Profile Borders
-      { id:"border_gold",   cat:"border", name:"Gold Border",    desc:"A gilded frame around your leaderboard entry.",  cost:150, value:"gold" },
-      { id:"border_blood",  cat:"border", name:"Blood Border",   desc:"A crimson border — the mark of a killer.",       cost:150, value:"blood" },
-      { id:"border_iron",   cat:"border", name:"Iron Border",    desc:"Forged iron — simple, unyielding.",              cost:100, value:"iron" },
+      { id:"border_iron",   cat:"border", name:"Iron Border",    desc:"Forged iron — simple, unyielding.",              cost:100, value:"iron",  minLevel:4 },
+      { id:"border_gold",   cat:"border", name:"Gold Border",    desc:"A gilded frame around your leaderboard entry.",  cost:150, value:"gold",  minLevel:7 },
+      { id:"border_blood",  cat:"border", name:"Blood Border",   desc:"A crimson border — the mark of a killer.",       cost:150, value:"blood", minLevel:7 },
       // ── Arena Taunts
-      { id:"taunt_1", cat:"taunt", name:"\"Kneel.\"",            desc:"Sent to your opponent at the start of each round.", cost:80,  value:"Kneel." },
-      { id:"taunt_2", cat:"taunt", name:"\"The crowd thirsts.\"",desc:"Sent to your opponent at the start of each round.", cost:80,  value:"The crowd thirsts." },
-      { id:"taunt_3", cat:"taunt", name:"\"I've buried better.\"",desc:"Sent to your opponent at the start of each round.",cost:80,  value:"I've buried better." },
-      { id:"taunt_4", cat:"taunt", name:"\"Fortune favours me.\"",desc:"Sent to your opponent at the start of each round.",cost:100, value:"Fortune favours me." },
-      { id:"taunt_5", cat:"taunt", name:"\"Your gods won't save you.\"",desc:"Sent to your opponent at the start of each round.",cost:120,value:"Your gods won't save you." },
-      // ── Victory Trail
-      { id:"trail_gold",   cat:"trail", name:"Gold Trail",   desc:"Your victor name shimmers in gold sparks on the results screen.", cost:200, value:"gold" },
-      { id:"trail_blood",  cat:"trail", name:"Blood Trail",  desc:"Your victor name drips red on the results screen.",               cost:200, value:"blood" },
-      { id:"trail_ice",    cat:"trail", name:"Frost Trail",  desc:"Your victor name crackles with blue ice on the results screen.",  cost:200, value:"ice" },
+      { id:"taunt_1", cat:"taunt", name:"\"Kneel.\"",                    desc:"Sent to your opponent at the start of each round.", cost:80,  value:"Kneel.",                    minLevel:3 },
+      { id:"taunt_2", cat:"taunt", name:"\"The crowd thirsts.\"",        desc:"Sent to your opponent at the start of each round.", cost:80,  value:"The crowd thirsts.",        minLevel:3 },
+      { id:"taunt_3", cat:"taunt", name:"\"I've buried better.\"",       desc:"Sent to your opponent at the start of each round.", cost:80,  value:"I've buried better.",       minLevel:5 },
+      { id:"taunt_4", cat:"taunt", name:"\"Fortune favours me.\"",       desc:"Sent to your opponent at the start of each round.", cost:100, value:"Fortune favours me.",       minLevel:5 },
+      { id:"taunt_5", cat:"taunt", name:"\"Your gods won't save you.\"", desc:"Sent to your opponent at the start of each round.", cost:120, value:"Your gods won't save you.", minLevel:8 },
+      // ── Victory Trails
+      { id:"trail_gold",  cat:"trail", name:"Gold Trail",  desc:"Your victor name shimmers in gold sparks on the results screen.", cost:200, value:"gold",  minLevel:10 },
+      { id:"trail_blood", cat:"trail", name:"Blood Trail", desc:"Your victor name drips red on the results screen.",               cost:200, value:"blood", minLevel:10 },
+      { id:"trail_ice",   cat:"trail", name:"Frost Trail", desc:"Your victor name crackles with blue ice on the results screen.",  cost:200, value:"ice",   minLevel:10 },
       // ── Cursors
-      { id:"cursor_sword",    cat:"cursor", name:"Sword Cursor",    desc:"⚔️ Replace your cursor with a sword.",         cost:100, value:"⚔️" },
-      { id:"cursor_skull",    cat:"cursor", name:"Skull Cursor",    desc:"💀 A skull follows your every move.",           cost:100, value:"💀" },
-      { id:"cursor_dragon",   cat:"cursor", name:"Dragon Cursor",   desc:"🐉 Command the arena with a dragon.",           cost:150, value:"🐉" },
-      { id:"cursor_trident",  cat:"cursor", name:"Trident Cursor",  desc:"🔱 The mark of a sea-born champion.",           cost:100, value:"🔱" },
-      { id:"cursor_crown",    cat:"cursor", name:"Crown Cursor",    desc:"👑 Only kings move like this.",                 cost:150, value:"👑" },
-      { id:"cursor_blood",    cat:"cursor", name:"Blood Cursor",    desc:"🩸 Leave a trail of red wherever you go.",      cost:120, value:"🩸" },
-      { id:"cursor_eye",      cat:"cursor", name:"Eye Cursor",      desc:"👁 The arena watches. So do you.",              cost:120, value:"👁" },
-      { id:"cursor_bolt",     cat:"cursor", name:"Lightning Cursor",desc:"⚡ Strike fast. Move faster.",                  cost:100, value:"⚡" },
+      { id:"cursor_sword",   cat:"cursor", name:"Sword Cursor",    desc:"⚔️ Replace your cursor with a sword.",    cost:100, value:"⚔️", minLevel:2 },
+      { id:"cursor_skull",   cat:"cursor", name:"Skull Cursor",    desc:"💀 A skull follows your every move.",     cost:100, value:"💀", minLevel:2 },
+      { id:"cursor_trident", cat:"cursor", name:"Trident Cursor",  desc:"🔱 The mark of a sea-born champion.",    cost:100, value:"🔱", minLevel:2 },
+      { id:"cursor_bolt",    cat:"cursor", name:"Lightning Cursor",desc:"⚡ Strike fast. Move faster.",            cost:100, value:"⚡", minLevel:2 },
+      { id:"cursor_blood",   cat:"cursor", name:"Blood Cursor",    desc:"🩸 Leave a trail of red wherever you go.",cost:120, value:"🩸", minLevel:5 },
+      { id:"cursor_crown",   cat:"cursor", name:"Crown Cursor",    desc:"👑 Only kings move like this.",           cost:150, value:"👑", minLevel:5 },
+      { id:"cursor_eye",     cat:"cursor", name:"Eye Cursor",      desc:"👁 The arena watches. So do you.",        cost:120, value:"👁", minLevel:5 },
+      { id:"cursor_dragon",  cat:"cursor", name:"Dragon Cursor",   desc:"🐉 Command the arena with a dragon.",    cost:150, value:"🐉", minLevel:10 },
       // ── Coming Soon
-      { id:"cs_weapon",  cat:"soon", name:"Weapon Skin",   desc:"Reskin your weapon's name and emoji in battle.", cost:250, value:null },
-      { id:"cs_banner",  cat:"soon", name:"Arena Banner",  desc:"A personal banner shown in the lobby when you host.", cost:300, value:null },
-      { id:"cs_title",   cat:"soon", name:"Title",         desc:"A prefix title before your name — The Unbroken, Ironclad, and more.", cost:200, value:null },
+      { id:"cs_weapon", cat:"soon", name:"Weapon Skin",  desc:"Reskin your weapon's name and emoji in battle.",              cost:250, value:null },
+      { id:"cs_banner", cat:"soon", name:"Arena Banner", desc:"A personal banner shown in the lobby when you host.",         cost:300, value:null },
+      { id:"cs_title",  cat:"soon", name:"Title",        desc:"A prefix title before your name — The Unbroken, Ironclad, and more.", cost:200, value:null },
     ];
 
     /* ── PLAYER PROFILE (in-memory cache) ────────────────────────────────── */
-    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, owned:[], activeColor:null, activeSymbol:null, activeBorder:null, activeTaunt:null, activeTrail:null, activeCursor:null, linked:false };
+    const XP = { win:80, loss:15, draw:30, crit:10, lowHpBonus:25 };
+    function xpForLevel(lvl){ return lvl*100; } // XP needed to go from lvl-1 → lvl
+    function totalXpForLevel(lvl){ return lvl*(lvl-1)/2*100; } // cumulative XP to reach lvl
+    function calcLevel(totalXp){
+      let lvl=1, xpLeft=totalXp||0;
+      while(xpLeft>=xpForLevel(lvl+1)){ xpLeft-=xpForLevel(lvl+1); lvl++; }
+      return { level:lvl, xpIntoLevel:xpLeft, xpNeeded:xpForLevel(lvl+1) };
+    }
+
+    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, xp:0, level:1, owned:[], activeColor:null, activeSymbol:null, activeBorder:null, activeTaunt:null, activeTrail:null, activeCursor:null, linked:false };
 
     function formatDisplayName(name, profile) {
       const sym   = profile?.activeSymbol || null;
@@ -261,10 +270,12 @@
     function updateAuthUI(user){
       const bar=$("auth-bar"); if(!user){bar.innerHTML="";return;}
       const linked=isLinked(user);
+      const lvl=playerProfile.level||1;
       const goldDisplay=`<span class="auth-gold">⚙ ${playerProfile.gold||0}</span>`;
+      const lvlBadge=`<span class="auth-level">Lv. ${lvl}</span>`;
       bar.innerHTML=linked
-        ?`${goldDisplay}<span class="auth-name">${formatDisplayName(playerProfile.name||user.displayName||"Gladiator",playerProfile)}</span><span class="auth-badge linked">Google Linked</span><button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
-        :`${goldDisplay}<span class="auth-name">${formatDisplayName(playerProfile.name||"Anonymous Gladiator",playerProfile)}</span><button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google</button>`;
+        ?`${goldDisplay}${lvlBadge}<span class="auth-name">${formatDisplayName(playerProfile.name||user.displayName||"Gladiator",playerProfile)}</span><span class="auth-badge linked">Google Linked</span><button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
+        :`${goldDisplay}${lvlBadge}<span class="auth-name">${formatDisplayName(playerProfile.name||"Anonymous Gladiator",playerProfile)}</span><button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google</button>`;
       if(linked) $("btn-unlink-google").onclick=unlinkGoogle;
       else       $("btn-link-google").onclick=linkGoogle;
     }
@@ -326,6 +337,22 @@
         if(!playerProfile.activeTaunt)  playerProfile.activeTaunt=null;
         if(!playerProfile.activeTrail)  playerProfile.activeTrail=null;
         if(!playerProfile.activeCursor) playerProfile.activeCursor=null;
+
+        // ── One-time XP backfill: if player has match history but no XP yet
+        if(!playerProfile.xp){
+          const backfilledXp =
+            (playerProfile.wins   || 0) * XP.win  +
+            (playerProfile.losses || 0) * XP.loss +
+            (playerProfile.draws  || 0) * XP.draw;
+          if(backfilledXp > 0){
+            playerProfile.xp = backfilledXp;
+            await update(ref(db,`players/${uid}`),{xp: backfilledXp});
+          } else {
+            playerProfile.xp = 0;
+          }
+        }
+
+        playerProfile.level = calcLevel(playerProfile.xp).level;
       }
       applyActiveCursor();
     }
@@ -354,6 +381,10 @@
       goldEarned+=crits*GOLD.crit;
       if(outcome==="win"&&finalHp/maxHp<0.2)goldEarned+=GOLD.lowHpBonus;
 
+      let xpEarned=outcome==="win"?XP.win:outcome==="loss"?XP.loss:XP.draw;
+      xpEarned+=crits*XP.crit;
+      if(outcome==="win"&&finalHp/maxHp<0.2)xpEarned+=XP.lowHpBonus;
+
       // Check leaderboard rank for top-3 win bonus
       let rankBonus=0;
       if(outcome==="win"){
@@ -366,23 +397,33 @@
             const rank=sorted.findIndex(p=>p.id===uid);
             if(rank>=0&&rank<=2) rankBonus=GOLD.rankBonus[rank];
           }
-        }catch(e){ /* non-fatal — skip rank bonus if fetch fails */ }
+        }catch(e){}
         goldEarned+=rankBonus;
       }
 
+      let leveledUp=false, newLevel=1;
       await runTransaction(pRef,current=>{
-        if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,owned:[],activeColor:null,activeSymbol:null};
+        if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,xp:0,level:1,owned:[],activeColor:null,activeSymbol:null};
         current.gold=(current.gold||0)+goldEarned;
+        current.xp=(current.xp||0)+xpEarned;
+        const oldLevel=current.level||1;
+        current.level=calcLevel(current.xp).level;
+        if(current.level>oldLevel){ leveledUp=true; newLevel=current.level; }
         if(outcome==="win")current.wins=(current.wins||0)+1;
         else if(outcome==="loss")current.losses=(current.losses||0)+1;
         else current.draws=(current.draws||0)+1;
         return current;
       });
       playerProfile.gold=(playerProfile.gold||0)+goldEarned;
+      playerProfile.xp=(playerProfile.xp||0)+xpEarned;
+      const oldLevel=playerProfile.level||1;
+      playerProfile.level=calcLevel(playerProfile.xp).level;
+      leveledUp=playerProfile.level>oldLevel;
+      newLevel=playerProfile.level;
       if(outcome==="win")playerProfile.wins=(playerProfile.wins||0)+1;
       else if(outcome==="loss")playerProfile.losses=(playerProfile.losses||0)+1;
       else playerProfile.draws=(playerProfile.draws||0)+1;
-      return {total:goldEarned, rankBonus};
+      return {total:goldEarned, rankBonus, xpEarned, leveledUp, newLevel};
     }
 
     /* ── SHOP ─────────────────────────────────────────────────────────────── */
@@ -437,6 +478,8 @@
           const isActiveCursor=playerProfile.activeCursor===item.value&&item.cat==="cursor";
           const isActive=isActiveColor||isActiveSymbol||isActiveBorder||isActiveTaunt||isActiveTrail||isActiveCursor;
           const canAfford=gold>=item.cost;
+          const playerLevel=playerProfile.level||1;
+          const levelLocked=!isOwned&&(item.minLevel||1)>playerLevel;
 
           const card=document.createElement("div");
           card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}`;
@@ -458,10 +501,11 @@
           if(item.cat==="cursor") preview=`<span class="shop-preview" style="font-size:1.4rem">${item.value}</span>`;
 
           let btnLabel="", btnClass="btn shop-btn";
-          if(isSoon)                  {btnLabel="Coming Soon"; btnClass+=" disabled";}
-          else if(isActive)           {btnLabel="Deactivate";  btnClass+=" shop-btn-deactivate";}
-          else if(isOwned&&!isRename) {btnLabel="Equip";       btnClass+=" shop-btn-equip";}
-          else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;btnClass+=" disabled";}
+          if(isSoon)                  {btnLabel="Coming Soon";          btnClass+=" disabled";}
+          else if(isActive)           {btnLabel="Deactivate";           btnClass+=" shop-btn-deactivate";}
+          else if(isOwned&&!isRename) {btnLabel="Equip";                btnClass+=" shop-btn-equip";}
+          else if(levelLocked)        {btnLabel=`Lv. ${item.minLevel} Required`; btnClass+=" disabled";}
+          else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;      btnClass+=" disabled";}
           else                        {btnLabel=`Buy ⚙ ${item.cost}`;}
 
           card.innerHTML=`
@@ -473,7 +517,7 @@
               </div>
               <div>${badge}</div>
             </div>
-            <button class="${btnClass}" ${isSoon||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
+            <button class="${btnClass}" ${isSoon||levelLocked||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
 
           if(!isSoon){
             card.querySelector("button").onclick=async()=>{
@@ -573,9 +617,11 @@
         row.className="lb-row"+(p.uid===currentUser?.uid?" lb-me":"");
         const bStyle=p.activeBorder?BORDER_STYLES[p.activeBorder]||"":"";
         const displayName=`<span class="lb-name-inner"${bStyle?` style="${bStyle}"`:""}>${formatDisplayName(p.name||"Unknown",p)}</span>`;
+        const lvl=p.level||calcLevel(p.xp||0).level;
         row.innerHTML=`
           <div class="lb-rank">${["🥇","🥈","🥉"][i]||`#${i+1}`}</div>
           <div class="lb-name">${displayName}${p.linked?" <span class='lb-linked'>G</span>":""}</div>
+          <div class="lb-level">Lv. ${lvl}</div>
           <div class="lb-wins">${p.wins||0}W / ${p.losses||0}L</div>
           <div class="lb-gold">⚙ ${p.gold||0}</div>`;
         wrap.appendChild(row);
@@ -767,7 +813,7 @@
         const outcome=w==="draw"?"draw":w==="p1"?"win":"loss";
         const myCrits=room.allLogs.filter(l=>l.type==="crit"&&l.who===myData.name).length;
         try{
-          const {total,rankBonus}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
           const goldBanner=$("gold-earned-banner");
           const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
           const rankLabels=["🥇 Top rank","🥈 2nd rank","🥉 3rd rank"];
@@ -776,10 +822,26 @@
             : "";
           goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${total} gold</span>${rankSnippet} <span style="opacity:0.5;font-size:0.8em">(Skirmish)</span>`;
           goldBanner.style.display="";
+          // XP bar
+          const xpPanel=$("xp-earned-panel");
+          if(xpEarned){
+            if(leveledUp) setTimeout(()=>showToast(`⬆ Level up! You are now Level ${newLevel}!`),600);
+            const {level,xpIntoLevel,xpNeeded}=calcLevel(playerProfile.xp);
+            const pct=Math.min(100,(xpIntoLevel/xpNeeded)*100).toFixed(1);
+            xpPanel.innerHTML=`
+              <div class="xp-row">
+                <span class="xp-label">+${xpEarned} XP</span>
+                <span class="xp-level">Lv. ${level}</span>
+              </div>
+              <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+              <div class="xp-sub">${xpIntoLevel} / ${xpNeeded} XP to next level</div>`;
+            xpPanel.style.display="";
+          }
           updateAuthUI(currentUser);
         }catch(e){ console.error(e); $("gold-earned-banner").style.display="none"; }
       } else {
         $("gold-earned-banner").style.display="none";
+        $("xp-earned-panel").style.display="none";
       }
     }
 
@@ -1042,14 +1104,14 @@
         const maxHp=ARMORS[myData.armor].hp;
         let outcome=room.winner==="draw"?"draw":room.winner===myRole?"win":"loss";
         try{
-          const {total,rankBonus}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
-          showResults(room,outcome,total,rankBonus); return;
+          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          showResults(room,outcome,total,rankBonus,xpEarned,leveledUp,newLevel); return;
         }catch(e){console.error(e);}
       }
-      showResults(room,null,0,0);
+      showResults(room,null,0,0,0,false,1);
     }
 
-    function showResults(room,outcome,goldEarned,rankBonus=0){
+    function showResults(room,outcome,goldEarned,rankBonus=0,xpEarned=0,leveledUp=false,newLevel=1){
       showOnly("screen-results");
       const w=room.winner,wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
@@ -1063,6 +1125,7 @@
       $("result-p1-name").textContent=room.p1.name;
       $("result-p2-hp").textContent=`${Math.max(0,room.p2.hp)} HP`;
       $("result-p2-name").textContent=room.p2.name;
+
       const goldBanner=$("gold-earned-banner");
       if(outcome&&goldEarned){
         const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
@@ -1073,6 +1136,25 @@
         goldBanner.innerHTML=`<span class="gold-outcome">${outcomeText}</span> You earned <span class="gold-amount">⚙ ${goldEarned} gold</span>${rankSnippet}`;
         goldBanner.style.display="";
       } else goldBanner.style.display="none";
+
+      // XP bar
+      const xpPanel=$("xp-earned-panel");
+      if(outcome&&xpEarned){
+        if(leveledUp){
+          setTimeout(()=>showToast(`⬆ Level up! You are now Level ${newLevel}!`),600);
+        }
+        const {level,xpIntoLevel,xpNeeded}=calcLevel(playerProfile.xp);
+        const pct=Math.min(100,(xpIntoLevel/xpNeeded)*100).toFixed(1);
+        xpPanel.innerHTML=`
+          <div class="xp-row">
+            <span class="xp-label">+${xpEarned} XP</span>
+            <span class="xp-level">Lv. ${level}</span>
+          </div>
+          <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+          <div class="xp-sub">${xpIntoLevel} / ${xpNeeded} XP to next level</div>`;
+        xpPanel.style.display="";
+      } else xpPanel.style.display="none";
+
       const box=$("chronicle-scroll"); box.innerHTML="";
       appendLogs(room.allLogs?Object.values(room.allLogs):[],box);
       updateAuthUI(currentUser);
@@ -1379,6 +1461,7 @@
       <div class="victor-name"  id="victor-name"></div>
       <div class="victor-sub"   id="victor-sub"></div>
       <div id="gold-earned-banner" class="gold-earned-banner" style="display:none"></div>
+      <div id="xp-earned-panel" class="xp-earned-panel" style="display:none"></div>
       <div class="final-scores">
         <div><div class="f-hp p1" id="result-p1-hp"></div><div class="f-label" id="result-p1-name"></div></div>
         <div class="vs">vs</div>
