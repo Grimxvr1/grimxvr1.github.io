@@ -1009,6 +1009,31 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 .shop-cat-group {
   margin-bottom: 0.5rem;
 }
+
+.shop-locked-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0.5rem 0 0.25rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--row-line);
+}
+.shop-locked-divider span { opacity: 0.6; }
+
+.shop-card.level-locked {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  transition: opacity 0.2s, filter 0.2s;
+}
+.shop-card.level-locked:hover {
+  opacity: 0.6;
+  filter: grayscale(0.2);
+}
   display: flex;
   align-items: center;
   gap: 0.8rem;

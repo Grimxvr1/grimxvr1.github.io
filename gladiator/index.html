@@ -466,7 +466,11 @@
         group.className="shop-cat-group";
         wrap.appendChild(group);
 
-        items.forEach(item=>{
+        const playerLevel=playerProfile.level||1;
+        const unlocked=items.filter(i=>i.cat==="soon"||(playerProfile.owned||[]).includes(i.id)||(i.minLevel||1)<=playerLevel);
+        const locked   =items.filter(i=>i.cat!=="soon"&&!(playerProfile.owned||[]).includes(i.id)&&(i.minLevel||1)>playerLevel);
+
+        const buildCard=(item)=>{
           const isOwned=owned.includes(item.id);
           const isSoon=item.cat==="soon";
           const isRename=item.cat==="rename";
@@ -478,11 +482,10 @@
           const isActiveCursor=playerProfile.activeCursor===item.value&&item.cat==="cursor";
           const isActive=isActiveColor||isActiveSymbol||isActiveBorder||isActiveTaunt||isActiveTrail||isActiveCursor;
           const canAfford=gold>=item.cost;
-          const playerLevel=playerProfile.level||1;
           const levelLocked=!isOwned&&(item.minLevel||1)>playerLevel;
 
           const card=document.createElement("div");
-          card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}`;
+          card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}${levelLocked?" level-locked":""}`;
 
           let badge="";
           if(isSoon)                  badge=`<span class="shop-badge soon-badge">Soon</span>`;
@@ -501,11 +504,11 @@
           if(item.cat==="cursor") preview=`<span class="shop-preview" style="font-size:1.4rem">${item.value}</span>`;
 
           let btnLabel="", btnClass="btn shop-btn";
-          if(isSoon)                  {btnLabel="Coming Soon";          btnClass+=" disabled";}
-          else if(isActive)           {btnLabel="Deactivate";           btnClass+=" shop-btn-deactivate";}
-          else if(isOwned&&!isRename) {btnLabel="Equip";                btnClass+=" shop-btn-equip";}
-          else if(levelLocked)        {btnLabel=`Lv. ${item.minLevel} Required`; btnClass+=" disabled";}
-          else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;      btnClass+=" disabled";}
+          if(isSoon)                  {btnLabel="Coming Soon";                  btnClass+=" disabled";}
+          else if(isActive)           {btnLabel="Deactivate";                   btnClass+=" shop-btn-deactivate";}
+          else if(isOwned&&!isRename) {btnLabel="Equip";                        btnClass+=" shop-btn-equip";}
+          else if(levelLocked)        {btnLabel=`Lv. ${item.minLevel} Required`;btnClass+=" disabled";}
+          else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;              btnClass+=" disabled";}
           else                        {btnLabel=`Buy ⚙ ${item.cost}`;}
 
           card.innerHTML=`
@@ -519,7 +522,7 @@
             </div>
             <button class="${btnClass}" ${isSoon||levelLocked||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
 
-          if(!isSoon){
+          if(!isSoon&&!levelLocked){
             card.querySelector("button").onclick=async()=>{
               if(isActive){
                 const updates={};
@@ -559,8 +562,20 @@
               }
             };
           }
-          group.appendChild(card);
-        });
+          return card;
+        };
+
+        // Render unlocked items
+        unlocked.forEach(item=>group.appendChild(buildCard(item)));
+
+        // Render locked items under a divider
+        if(locked.length){
+          const divider=document.createElement("div");
+          divider.className="shop-locked-divider";
+          divider.innerHTML=`🔒 <span>Locked</span>`;
+          group.appendChild(divider);
+          locked.sort((a,b)=>(a.minLevel||1)-(b.minLevel||1)).forEach(item=>group.appendChild(buildCard(item)));
+        }
       });
 
       $("shop-gold-display").textContent=`⚙ ${playerProfile.gold||0} gold`;
@@ -1281,7 +1296,10 @@
         showToast("Room cancelled.");
       };
       document.querySelectorAll(".action-btn").forEach(btn=>{btn.onclick=()=>onActionChosen(btn.dataset.action);});
-      $("btn-play-again").onclick=resetToSetup;
+      $("btn-play-again").onclick=async()=>{
+        if(myRole==="p1"&&roomRef) await set(roomRef,null).catch(()=>{});
+        resetToSetup();
+      };
       $("btn-leave-game").onclick=()=>{if(!confirm("Leave this game? Your opponent will claim victory."))return;resetToSetup();};
 
       // Name change modal
