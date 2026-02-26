@@ -78,12 +78,18 @@
     }
 
     function applyActiveCursor(){
+      let styleEl=document.getElementById("custom-cursor-style");
+      if(!styleEl){
+        styleEl=document.createElement("style");
+        styleEl.id="custom-cursor-style";
+        document.head.appendChild(styleEl);
+      }
       const emoji=playerProfile.activeCursor;
       if(emoji){
         const url=emojiToCursorUrl(emoji,40);
-        document.body.style.cursor=`url('${url}') 20 20, auto`;
+        styleEl.textContent=`*, *::before, *::after, a, button, input, select, textarea, [role="button"] { cursor: url('${url}') 20 20, auto !important; }`;
       } else {
-        document.body.style.cursor="";
+        styleEl.textContent="";
       }
     }
     // Each item: id, category, name, desc, cost, value (what gets saved)
