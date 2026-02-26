@@ -950,7 +950,16 @@
       $("victor-name").textContent=w==="draw"?"DRAW":wd.name;
       const victorEl=$("victor-name");
       victorEl.className="victor-name";
-      if(wd?.activeTrail) victorEl.classList.add(`trail-${wd.activeTrail}`);
+      victorEl.style.removeProperty("-webkit-background-clip");
+      victorEl.style.removeProperty("background-clip");
+      victorEl.style.removeProperty("-webkit-text-fill-color");
+      victorEl.style.removeProperty("background");
+      if(wd?.activeTrail){
+        victorEl.classList.add(`trail-${wd.activeTrail}`);
+        victorEl.style.setProperty("-webkit-background-clip","unset");
+        victorEl.style.setProperty("background-clip","unset");
+        victorEl.style.setProperty("background","none");
+      }
       $("victor-sub").textContent=wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
       $("result-p1-hp").textContent=`${Math.max(0,room.p1.hp)} HP`;
       $("result-p1-name").textContent=room.p1.name;
