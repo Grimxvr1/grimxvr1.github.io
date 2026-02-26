@@ -57,12 +57,13 @@
       block: { label:"Block", emoji:"🛡️" },
       dodge: { label:"Dodge", emoji:"💨" },
     };
-    const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25, rankBonus:[15,10,5] };
+    const GOLD = { win:50, loss:10, draw:20, crit:5, lowHpBonus:25, rankBonus:[15,10,5], rankDrawBonus:[8,5,3] };
 
     const BORDER_STYLES = {
-      gold:  "border:1.5px solid #c9a84c; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(201,168,76,0.08);",
-      blood: "border:1.5px solid #cc2222; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(204,34,34,0.08);",
-      iron:  "border:1.5px solid #7a8090; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(120,128,144,0.08);",
+      gold:     "border:1.5px solid #c9a84c; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(201,168,76,0.08);",
+      blood:    "border:1.5px solid #cc2222; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(204,34,34,0.08);",
+      iron:     "border:1.5px solid #7a8090; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(120,128,144,0.08);",
+      champion: "border:1.5px solid #ffd700; padding:0.1rem 0.5rem; border-radius:1px; background:rgba(255,215,0,0.1); box-shadow:0 0 6px rgba(255,215,0,0.3);",
     };
 
     /* ── CUSTOM CURSOR ────────────────────────────────────────────────────── */
@@ -137,19 +138,28 @@
       { id:"cs_weapon", cat:"soon", name:"Weapon Skin",  desc:"Reskin your weapon's name and emoji in battle.",              cost:250, value:null },
       { id:"cs_banner", cat:"soon", name:"Arena Banner", desc:"A personal banner shown in the lobby when you host.",         cost:300, value:null },
       { id:"cs_title",  cat:"soon", name:"Title",        desc:"A prefix title before your name — The Unbroken, Ironclad, and more.", cost:200, value:null },
+      // ── Champion (rank-gated)
+      { id:"champ_border",  cat:"champ", name:"Champion's Border", desc:"An exclusive border for top 3 gladiators. Kept forever once purchased.", cost:300, value:"champion", rankRequired:3 },
+      { id:"champ_color",   cat:"champ", name:"Champion Gold",     desc:"A name color reserved for the top 3. Yours to keep once unlocked.",      cost:200, value:"#ffd700", rankRequired:3 },
+      { id:"champ_cursor",  cat:"champ", name:"Champion Cursor",   desc:"⚜ An exclusive cursor for the arena's finest.",                          cost:200, value:"⚜",     rankRequired:3 },
     ];
 
     /* ── PLAYER PROFILE (in-memory cache) ────────────────────────────────── */
     const XP = { win:80, loss:15, draw:30, crit:10, lowHpBonus:25 };
-    function xpForLevel(lvl){ return lvl*100; } // XP needed to go from lvl-1 → lvl
-    function totalXpForLevel(lvl){ return lvl*(lvl-1)/2*100; } // cumulative XP to reach lvl
+    function xpForLevel(lvl){ return lvl*100; }
+    function totalXpForLevel(lvl){ return lvl*(lvl-1)/2*100; }
     function calcLevel(totalXp){
       let lvl=1, xpLeft=totalXp||0;
       while(xpLeft>=xpForLevel(lvl+1)){ xpLeft-=xpForLevel(lvl+1); lvl++; }
       return { level:lvl, xpIntoLevel:xpLeft, xpNeeded:xpForLevel(lvl+1) };
     }
 
-    let playerProfile = { name:"", wins:0, losses:0, draws:0, gold:0, xp:0, level:1, owned:[], activeColor:null, activeSymbol:null, activeBorder:null, activeTaunt:null, activeTrail:null, activeCursor:null, linked:false };
+    let playerProfile = {
+      name:"", wins:0, losses:0, draws:0, gold:0, xp:0, level:1,
+      winStreak:0, matchHistory:[], nemesisMap:{},
+      owned:[], activeColor:null, activeSymbol:null, activeBorder:null,
+      activeTaunt:null, activeTrail:null, activeCursor:null, linked:false
+    };
 
     function formatDisplayName(name, profile) {
       const sym   = profile?.activeSymbol || null;
@@ -271,11 +281,13 @@
       const bar=$("auth-bar"); if(!user){bar.innerHTML="";return;}
       const linked=isLinked(user);
       const lvl=playerProfile.level||1;
+      const rank=window._myLeaderboardRank||null;
+      const rankPrefix=rank&&rank<=3?["🥇","🥈","🥉"][rank-1]+" ":"";
       const goldDisplay=`<span class="auth-gold">⚙ ${playerProfile.gold||0}</span>`;
       const lvlBadge=`<span class="auth-level">Lv. ${lvl}</span>`;
       bar.innerHTML=linked
-        ?`${goldDisplay}${lvlBadge}<span class="auth-name">${formatDisplayName(playerProfile.name||user.displayName||"Gladiator",playerProfile)}</span><span class="auth-badge linked">Google Linked</span><button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
-        :`${goldDisplay}${lvlBadge}<span class="auth-name">${formatDisplayName(playerProfile.name||"Anonymous Gladiator",playerProfile)}</span><button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google</button>`;
+        ?`${goldDisplay}${lvlBadge}<span class="auth-name">${rankPrefix}${formatDisplayName(playerProfile.name||user.displayName||"Gladiator",playerProfile)}</span><span class="auth-badge linked">Google Linked</span><button class="btn auth-link-btn" id="btn-unlink-google" style="opacity:0.5">✕ Unlink</button>`
+        :`${goldDisplay}${lvlBadge}<span class="auth-name">${rankPrefix}${formatDisplayName(playerProfile.name||"Anonymous Gladiator",playerProfile)}</span><button class="btn auth-link-btn" id="btn-link-google">🔗 Link Google</button>`;
       if(linked) $("btn-unlink-google").onclick=unlinkGoogle;
       else       $("btn-link-google").onclick=linkGoogle;
     }
@@ -337,8 +349,11 @@
         if(!playerProfile.activeTaunt)  playerProfile.activeTaunt=null;
         if(!playerProfile.activeTrail)  playerProfile.activeTrail=null;
         if(!playerProfile.activeCursor) playerProfile.activeCursor=null;
+        if(!playerProfile.winStreak)    playerProfile.winStreak=0;
+        if(!playerProfile.matchHistory) playerProfile.matchHistory=[];
+        if(!playerProfile.nemesisMap)   playerProfile.nemesisMap={};
 
-        // ── One-time XP backfill: if player has match history but no XP yet
+        // ── One-time XP backfill
         if(!playerProfile.xp){
           const backfilledXp =
             (playerProfile.wins   || 0) * XP.win  +
@@ -351,7 +366,6 @@
             playerProfile.xp = 0;
           }
         }
-
         playerProfile.level = calcLevel(playerProfile.xp).level;
       }
       applyActiveCursor();
@@ -375,7 +389,7 @@
       }
     }
 
-    async function recordResult(uid,gladName,outcome,crits,finalHp,maxHp){
+    async function recordResult(uid,gladName,outcome,crits,finalHp,maxHp,matchMeta){
       const pRef=ref(db,`players/${uid}`);
       let goldEarned=outcome==="win"?GOLD.win:outcome==="loss"?GOLD.loss:GOLD.draw;
       goldEarned+=crits*GOLD.crit;
@@ -385,9 +399,9 @@
       xpEarned+=crits*XP.crit;
       if(outcome==="win"&&finalHp/maxHp<0.2)xpEarned+=XP.lowHpBonus;
 
-      // Check leaderboard rank for top-3 win bonus
+      // Check leaderboard rank for top-3 bonus (wins AND draws)
       let rankBonus=0;
-      if(outcome==="win"){
+      if(outcome==="win"||outcome==="draw"){
         try{
           const snap=await get(ref(db,"players"));
           if(snap.exists()){
@@ -395,42 +409,110 @@
               .map(([id,p])=>({id,...p}))
               .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0));
             const rank=sorted.findIndex(p=>p.id===uid);
-            if(rank>=0&&rank<=2) rankBonus=GOLD.rankBonus[rank];
+            if(rank>=0&&rank<=2){
+              rankBonus=outcome==="win"?GOLD.rankBonus[rank]:GOLD.rankDrawBonus[rank];
+            }
           }
         }catch(e){}
         goldEarned+=rankBonus;
       }
 
+      // Build match history entry
+      const historyEntry={
+        outcome,
+        oppName:  matchMeta?.oppName  || "Unknown",
+        myWeapon: matchMeta?.myWeapon || null,
+        myArmor:  matchMeta?.myArmor  || null,
+        oppWeapon:matchMeta?.oppWeapon|| null,
+        oppArmor: matchMeta?.oppArmor || null,
+        myHp:     finalHp,
+        oppHp:    matchMeta?.oppHp    ?? null,
+        rounds:   matchMeta?.rounds   || null,
+        gold:     goldEarned,
+        xp:       xpEarned,
+        rankBonus,
+        ts:       Date.now(),
+      };
+
       let leveledUp=false, newLevel=1;
       await runTransaction(pRef,current=>{
-        if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,xp:0,level:1,owned:[],activeColor:null,activeSymbol:null};
+        if(!current)current={name:gladName,wins:0,losses:0,draws:0,gold:0,xp:0,level:1,winStreak:0,matchHistory:[],nemesisMap:{},owned:[],activeColor:null,activeSymbol:null};
         current.gold=(current.gold||0)+goldEarned;
         current.xp=(current.xp||0)+xpEarned;
         const oldLevel=current.level||1;
         current.level=calcLevel(current.xp).level;
         if(current.level>oldLevel){ leveledUp=true; newLevel=current.level; }
-        if(outcome==="win")current.wins=(current.wins||0)+1;
-        else if(outcome==="loss")current.losses=(current.losses||0)+1;
-        else current.draws=(current.draws||0)+1;
+        if(outcome==="win"){
+          current.wins=(current.wins||0)+1;
+          current.winStreak=(current.winStreak||0)+1;
+        } else if(outcome==="loss"){
+          current.losses=(current.losses||0)+1;
+          current.winStreak=0;
+        } else {
+          current.draws=(current.draws||0)+1;
+        }
+        // Match history — keep last 10
+        if(!current.matchHistory) current.matchHistory=[];
+        current.matchHistory=[historyEntry,...current.matchHistory].slice(0,10);
+        // Nemesis map — tally opponent frequency
+        if(!current.nemesisMap) current.nemesisMap={};
+        const oppKey=(matchMeta?.oppName||"Unknown").replace(/[.#$/\[\]]/g,"_");
+        if(!current.nemesisMap[oppKey]) current.nemesisMap[oppKey]={name:matchMeta?.oppName||"Unknown",w:0,l:0,d:0};
+        if(outcome==="win")       current.nemesisMap[oppKey].w++;
+        else if(outcome==="loss") current.nemesisMap[oppKey].l++;
+        else                      current.nemesisMap[oppKey].d++;
         return current;
       });
+
+      // Sync to in-memory profile
       playerProfile.gold=(playerProfile.gold||0)+goldEarned;
       playerProfile.xp=(playerProfile.xp||0)+xpEarned;
       const oldLevel=playerProfile.level||1;
       playerProfile.level=calcLevel(playerProfile.xp).level;
       leveledUp=playerProfile.level>oldLevel;
       newLevel=playerProfile.level;
-      if(outcome==="win")playerProfile.wins=(playerProfile.wins||0)+1;
-      else if(outcome==="loss")playerProfile.losses=(playerProfile.losses||0)+1;
-      else playerProfile.draws=(playerProfile.draws||0)+1;
+      if(outcome==="win"){
+        playerProfile.wins=(playerProfile.wins||0)+1;
+        playerProfile.winStreak=(playerProfile.winStreak||0)+1;
+      } else if(outcome==="loss"){
+        playerProfile.losses=(playerProfile.losses||0)+1;
+        playerProfile.winStreak=0;
+      } else {
+        playerProfile.draws=(playerProfile.draws||0)+1;
+      }
+      if(!playerProfile.matchHistory) playerProfile.matchHistory=[];
+      playerProfile.matchHistory=[historyEntry,...playerProfile.matchHistory].slice(0,10);
+      if(!playerProfile.nemesisMap) playerProfile.nemesisMap={};
+      const oppKey2=(matchMeta?.oppName||"Unknown").replace(/[.#$/\[\]]/g,"_");
+      if(!playerProfile.nemesisMap[oppKey2]) playerProfile.nemesisMap[oppKey2]={name:matchMeta?.oppName||"Unknown",w:0,l:0,d:0};
+      if(outcome==="win")       playerProfile.nemesisMap[oppKey2].w++;
+      else if(outcome==="loss") playerProfile.nemesisMap[oppKey2].l++;
+      else                      playerProfile.nemesisMap[oppKey2].d++;
+
       return {total:goldEarned, rankBonus, xpEarned, leveledUp, newLevel};
     }
 
     /* ── SHOP ─────────────────────────────────────────────────────────────── */
-    function buildShop(){
+    async function buildShop(){
       const wrap=$("shop-items"); wrap.innerHTML="";
       const owned=playerProfile.owned||[];
       const gold=playerProfile.gold||0;
+
+      // Fetch current leaderboard rank for rank-gated items
+      let playerRank=999;
+      if(currentUser){
+        try{
+          const snap=await get(ref(db,"players"));
+          if(snap.exists()){
+            const sorted=Object.entries(snap.val())
+              .map(([id,p])=>({id,...p}))
+              .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0));
+            const idx=sorted.findIndex(p=>p.id===currentUser.uid);
+            playerRank=idx>=0?idx+1:999;
+          }
+        }catch(e){}
+      }
+      buildShop._playerRank=playerRank;
 
       const cats=[
         {key:"color",  label:"Name Colors"},
@@ -439,12 +521,13 @@
         {key:"taunt",  label:"Arena Taunts"},
         {key:"trail",  label:"Victory Trails"},
         {key:"cursor", label:"Cursors"},
+        {key:"champ",  label:"⚜ Champion Exclusives"},
         {key:"rename", label:"Name Change"},
         {key:"soon",   label:"Coming Soon"},
       ];
 
       // Track which categories are open (persist across rebuilds)
-      if(!buildShop._open) buildShop._open={color:true,symbol:true,border:false,taunt:false,trail:false,cursor:false,rename:false,soon:false};
+      if(!buildShop._open) buildShop._open={color:true,symbol:true,border:false,taunt:false,trail:false,cursor:false,champ:false,rename:false,soon:false};
       const open=buildShop._open;
 
       cats.forEach(cat=>{
@@ -467,8 +550,23 @@
         wrap.appendChild(group);
 
         const playerLevel=playerProfile.level||1;
-        const unlocked=items.filter(i=>i.cat==="soon"||(playerProfile.owned||[]).includes(i.id)||(i.minLevel||1)<=playerLevel);
-        const locked   =items.filter(i=>i.cat!=="soon"&&!(playerProfile.owned||[]).includes(i.id)&&(i.minLevel||1)>playerLevel);
+        const playerRank=buildShop._playerRank||999; // set before buildShop cats loop
+
+        // Champion items: locked if not in top 3 AND not already owned
+        const unlocked=items.filter(i=>{
+          if(i.cat==="soon") return true;
+          const owned=(playerProfile.owned||[]).includes(i.id);
+          if(owned) return true;
+          if((i.minLevel||1)>playerLevel) return false;
+          if(i.rankRequired&&playerRank>i.rankRequired) return false;
+          return true;
+        });
+        const locked=items.filter(i=>{
+          if(i.cat==="soon") return false;
+          const owned=(playerProfile.owned||[]).includes(i.id);
+          if(owned) return false;
+          return (i.minLevel||1)>playerLevel || (i.rankRequired&&playerRank>i.rankRequired);
+        });
 
         const buildCard=(item)=>{
           const isOwned=owned.includes(item.id);
@@ -483,14 +581,16 @@
           const isActive=isActiveColor||isActiveSymbol||isActiveBorder||isActiveTaunt||isActiveTrail||isActiveCursor;
           const canAfford=gold>=item.cost;
           const levelLocked=!isOwned&&(item.minLevel||1)>playerLevel;
+          const rankLocked =!isOwned&&item.rankRequired&&playerRank>item.rankRequired;
 
           const card=document.createElement("div");
-          card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}${levelLocked?" level-locked":""}`;
+          card.className=`shop-card${isOwned?" owned":""}${isSoon?" soon":""}${isActive?" active":""}${levelLocked||rankLocked?" level-locked":""}`;
 
           let badge="";
           if(isSoon)                  badge=`<span class="shop-badge soon-badge">Soon</span>`;
           else if(isActive)           badge=`<span class="shop-badge active-badge">Active</span>`;
           else if(isOwned&&!isRename) badge=`<span class="shop-badge owned-badge">Owned</span>`;
+          else if(item.rankRequired&&playerRank<=item.rankRequired&&!isOwned) badge=`<span class="shop-badge champ-badge">Top ${item.rankRequired}</span>`;
 
           let preview="";
           if(item.cat==="color")  preview=`<span class="shop-preview" style="color:${item.value}">${playerProfile.name||"Gladiator"}</span>`;
@@ -507,6 +607,7 @@
           if(isSoon)                  {btnLabel="Coming Soon";                  btnClass+=" disabled";}
           else if(isActive)           {btnLabel="Deactivate";                   btnClass+=" shop-btn-deactivate";}
           else if(isOwned&&!isRename) {btnLabel="Equip";                        btnClass+=" shop-btn-equip";}
+          else if(rankLocked)         {btnLabel=`Top ${item.rankRequired} Required`; btnClass+=" disabled";}
           else if(levelLocked)        {btnLabel=`Lv. ${item.minLevel} Required`;btnClass+=" disabled";}
           else if(!canAfford)         {btnLabel=`⚙ ${item.cost}`;              btnClass+=" disabled";}
           else                        {btnLabel=`Buy ⚙ ${item.cost}`;}
@@ -520,9 +621,9 @@
               </div>
               <div>${badge}</div>
             </div>
-            <button class="${btnClass}" ${isSoon||levelLocked||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
+            <button class="${btnClass}" ${isSoon||rankLocked||levelLocked||(!canAfford&&!isOwned&&!isActive)?"disabled":""}>${btnLabel}</button>`;
 
-          if(!isSoon&&!levelLocked){
+          if(!isSoon&&!levelLocked&&!rankLocked){
             card.querySelector("button").onclick=async()=>{
               if(isActive){
                 const updates={};
@@ -581,7 +682,139 @@
       $("shop-gold-display").textContent=`⚙ ${playerProfile.gold||0} gold`;
     }
 
-    /* ── NAME CHANGE MODAL ────────────────────────────────────────────────── */
+    /* ── STATS ────────────────────────────────────────────────────────────── */
+    function buildStats(){
+      const p=playerProfile;
+      const total=(p.wins||0)+(p.losses||0)+(p.draws||0);
+      const winRate=total>0?Math.round(((p.wins||0)/total)*100):0;
+      const {level,xpIntoLevel,xpNeeded}=calcLevel(p.xp||0);
+      const xpPct=Math.min(100,(xpIntoLevel/xpNeeded)*100).toFixed(1);
+
+      // ── Nemesis: most-faced opponent
+      const nemMap=p.nemesisMap||{};
+      const nemEntries=Object.values(nemMap);
+      let nemesis=null;
+      if(nemEntries.length){
+        nemesis=nemEntries.reduce((best,e)=>{
+          const t=(e.w||0)+(e.l||0)+(e.d||0);
+          const bt=(best.w||0)+(best.l||0)+(best.d||0);
+          return t>bt?e:best;
+        });
+        nemesis._total=(nemesis.w||0)+(nemesis.l||0)+(nemesis.d||0);
+      }
+
+      // ── Last match
+      const history=p.matchHistory||[];
+      const last=history[0]||null;
+
+      function outcomeClass(o){return o==="win"?"win":o==="loss"?"loss":"draw";}
+      function outcomeLabel(o){return o==="win"?"Victory":o==="loss"?"Defeat":"Draw";}
+      function wepLabel(w){return w?`${WEAPONS[w]?.emoji||""} ${WEAPONS[w]?.name||w}`:"—";}
+      function armLabel(a){return a?ARMORS[a]?.name||a:"—";}
+      function dateLabel(ts){
+        if(!ts)return "";
+        const d=new Date(ts);
+        const now=new Date();
+        const diff=now-d;
+        if(diff<86400000){
+          const h=Math.floor(diff/3600000);
+          return h<1?"Just now":`${h}h ago`;
+        }
+        return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      }
+
+      const wrap=$("stats-content");
+      wrap.innerHTML=`
+
+        <!-- PLAYER HEADER -->
+        <div class="stats-card">
+          <div class="stats-hero">
+            <div class="stats-name">${formatDisplayName(p.name||"Gladiator",p)}</div>
+            <div class="stats-hero-sub">${p.linked?"Google Linked · ":""}</div>
+            <div class="stats-level-badge">Level ${level}</div>
+            <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:${xpPct}%"></div></div>
+            <div class="xp-sub">${xpIntoLevel} / ${xpNeeded} XP to Level ${level+1}</div>
+          </div>
+          <hr class="stats-divider">
+          <div class="stats-grid">
+            <div class="stat-cell"><div class="stat-val win-val">${p.wins||0}</div><div class="stat-lbl">Wins</div></div>
+            <div class="stat-cell"><div class="stat-val loss-val">${p.losses||0}</div><div class="stat-lbl">Losses</div></div>
+            <div class="stat-cell"><div class="stat-val">${p.draws||0}</div><div class="stat-lbl">Draws</div></div>
+            <div class="stat-cell"><div class="stat-val win-val">${winRate}%</div><div class="stat-lbl">Win Rate</div></div>
+            <div class="stat-cell"><div class="stat-val gold-val">⚙ ${p.gold||0}</div><div class="stat-lbl">Gold</div></div>
+            <div class="stat-cell"><div class="stat-val">${total}</div><div class="stat-lbl">Matches</div></div>
+          </div>
+          <div class="streak-row">
+            <span class="streak-flame">${(p.winStreak||0)>=3?"🔥":"⚔"}</span>
+            <span class="streak-val">${p.winStreak||0}</span>
+            <span class="streak-lbl">Win Streak</span>
+          </div>
+        </div>
+
+        <!-- LAST MATCH -->
+        <div class="stats-card">
+          <div class="section-label">Last Match</div>
+          ${last?`
+          <div class="last-match">
+            <div class="lm-fighter">
+              <div class="lm-name">${formatDisplayName(p.name||"Gladiator",p)}</div>
+              <div class="lm-loadout">${wepLabel(last.myWeapon)}</div>
+              <div class="lm-loadout">${armLabel(last.myArmor)}</div>
+              <div class="lm-hp ${outcomeClass(last.outcome)}-hp">${Math.max(0,last.myHp??0)} HP left</div>
+            </div>
+            <div class="lm-outcome">
+              <span class="lm-badge ${outcomeClass(last.outcome)}">${outcomeLabel(last.outcome)}</span>
+              <div class="lm-date">${dateLabel(last.ts)}</div>
+              ${last.rounds?`<div class="lm-date">${last.rounds} round${last.rounds!==1?"s":""}</div>`:""}
+            </div>
+            <div class="lm-fighter">
+              <div class="lm-name">${last.oppName||"Unknown"}</div>
+              <div class="lm-loadout">${wepLabel(last.oppWeapon)}</div>
+              <div class="lm-loadout">${armLabel(last.oppArmor)}</div>
+              <div class="lm-hp ${last.outcome==="win"?"loss":"win"}-hp">${Math.max(0,last.oppHp??0)} HP left</div>
+            </div>
+          </div>
+          <div class="lm-rewards">
+            <span class="lm-reward-pill">⚙ +${last.gold} gold</span>
+            <span class="lm-reward-pill">+${last.xp} XP</span>
+            ${last.rankBonus>0?`<span class="lm-reward-pill">🏅 +${last.rankBonus} rank bonus</span>`:""}
+          </div>`:`<div class="stats-empty">No matches recorded yet. Enter the arena!</div>`}
+        </div>
+
+        <!-- NEMESIS -->
+        <div class="stats-card">
+          <div class="section-label">Nemesis</div>
+          ${nemesis?`
+          <div class="nemesis-card">
+            <div class="nemesis-icon">💀</div>
+            <div class="nemesis-info">
+              <div class="nemesis-name">${nemesis.name}</div>
+              <div class="nemesis-sub">Faced ${nemesis._total} time${nemesis._total!==1?"s":""} — your most frequent opponent</div>
+              <div class="nemesis-record">
+                <span class="nr-pill nr-win">${nemesis.w||0}W</span>
+                <span class="nr-pill nr-loss">${nemesis.l||0}L</span>
+                <span class="nr-pill nr-draw">${nemesis.d||0}D</span>
+              </div>
+            </div>
+          </div>`:`<div class="stats-empty">Face the same opponent more than once to reveal your nemesis.</div>`}
+        </div>
+
+        <!-- RECENT MATCHES -->
+        <div class="stats-card">
+          <div class="section-label">Recent Matches</div>
+          ${history.length?history.map(m=>`
+          <div class="history-row">
+            <span class="hr-outcome ${outcomeClass(m.outcome)}">${outcomeLabel(m.outcome)}</span>
+            <div>
+              <div class="hr-name">${m.oppName||"Unknown"}</div>
+              <div class="hr-loadout">${wepLabel(m.myWeapon)} · ${armLabel(m.myArmor)} vs ${wepLabel(m.oppWeapon)} · ${armLabel(m.oppArmor)}</div>
+            </div>
+            <span class="hr-gold">⚙ +${m.gold}</span>
+            <span class="hr-date">${dateLabel(m.ts)}</span>
+          </div>`).join(""):`<div class="stats-empty">No match history yet.</div>`}
+        </div>
+      `;
+    }
     function showNameChangeModal(){
       $("name-change-input").value=playerProfile.name||"";
       $("modal-name-change").style.display="";
@@ -627,15 +860,24 @@
         .map(([uid,p])=>({uid,...p}))
         .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0))
         .slice(0,10);
+
+      // Cache current user's rank for auth bar
+      const myIdx=board.findIndex(p=>p.uid===currentUser?.uid);
+      window._myLeaderboardRank=myIdx>=0?myIdx+1:null;
+      updateAuthUI(currentUser);
+
+      const glowClass=["lb-rank-1","lb-rank-2","lb-rank-3"];
       board.forEach((p,i)=>{
         const row=document.createElement("div");
-        row.className="lb-row"+(p.uid===currentUser?.uid?" lb-me":"");
+        row.className=`lb-row${p.uid===currentUser?.uid?" lb-me":""}${i<3?" "+glowClass[i]:""}`;
         const bStyle=p.activeBorder?BORDER_STYLES[p.activeBorder]||"":"";
         const displayName=`<span class="lb-name-inner"${bStyle?` style="${bStyle}"`:""}>${formatDisplayName(p.name||"Unknown",p)}</span>`;
         const lvl=p.level||calcLevel(p.xp||0).level;
+        const streak=p.winStreak||0;
+        const streakBadge=streak>=3?`<span class="lb-streak">🔥${streak}</span>`:"";
         row.innerHTML=`
           <div class="lb-rank">${["🥇","🥈","🥉"][i]||`#${i+1}`}</div>
-          <div class="lb-name">${displayName}${p.linked?" <span class='lb-linked'>G</span>":""}</div>
+          <div class="lb-name">${displayName}${p.linked?" <span class='lb-linked'>G</span>":""}${streakBadge}</div>
           <div class="lb-level">Lv. ${lvl}</div>
           <div class="lb-wins">${p.wins||0}W / ${p.losses||0}L</div>
           <div class="lb-gold">⚙ ${p.gold||0}</div>`;
@@ -823,12 +1065,21 @@
 
       // Record stats if logged in
       if(currentUser){
-        const myData=room.p1;
-        const maxHp=ARMORS[myData.armor].hp;
+        const myData =room.p1;
+        const oppData=room.p2;
+        const maxHp  =ARMORS[myData.armor].hp;
         const outcome=w==="draw"?"draw":w==="p1"?"win":"loss";
         const myCrits=room.allLogs.filter(l=>l.type==="crit"&&l.who===myData.name).length;
+        const rounds =room.allLogs.filter(l=>l.type==="round").length;
+        const matchMeta={
+          oppName:  oppData.name,
+          myWeapon: myData.weapon,  myArmor:  myData.armor,
+          oppWeapon:oppData.weapon, oppArmor: oppData.armor,
+          oppHp:    Math.max(0,oppData.hp),
+          rounds,
+        };
         try{
-          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp,matchMeta);
           const goldBanner=$("gold-earned-banner");
           const outcomeText=outcome==="win"?"Victory!":outcome==="draw"?"Draw!":"Defeated.";
           const rankLabels=["🥇 Top rank","🥈 2nd rank","🥉 3rd rank"];
@@ -946,7 +1197,7 @@
 
     /* ── DOM ──────────────────────────────────────────────────────────────── */
     const $=id=>document.getElementById(id);
-    const SCREENS=["screen-setup","screen-lobby","screen-leaderboard","screen-shop","screen-waiting","screen-battle","screen-results"];
+    const SCREENS=["screen-setup","screen-lobby","screen-leaderboard","screen-shop","screen-stats","screen-waiting","screen-battle","screen-results"];
     const showOnly=id=>SCREENS.forEach(s=>$(s).style.display=s===id?"":"none");
 
     /* ── LOBBY ────────────────────────────────────────────────────────────── */
@@ -996,7 +1247,9 @@
     /* ── HP BAR ───────────────────────────────────────────────────────────── */
     function renderFighter(p,side){
       const maxHp=ARMORS[p.armor].hp,pct=Math.max(0,(p.hp/maxHp)*100).toFixed(1);
-      $(`${side}-block`).innerHTML=`<div class="f-name">${p.name}</div><div class="f-meta">${WEAPONS[p.weapon].name} · ${ARMORS[p.armor].name}</div><div class="hp-bar-bg"><div class="hp-bar-fill ${side==="p1"?"bar-p1":"bar-p2"}" style="width:${pct}%"></div></div><div class="hp-text">${Math.max(0,p.hp)} / ${maxHp} HP</div>`;
+      // Show 👑 Champion tag if this fighter is the current #1 (stored on room data)
+      const champTag=p.isChampion?`<span class="champ-tag">👑 Champion</span>`:"";
+      $(`${side}-block`).innerHTML=`<div class="f-name">${p.name}${champTag}</div><div class="f-meta">${WEAPONS[p.weapon].name} · ${ARMORS[p.armor].name}</div><div class="hp-bar-bg"><div class="hp-bar-fill ${side==="p1"?"bar-p1":"bar-p2"}" style="width:${pct}%"></div></div><div class="hp-text">${Math.max(0,p.hp)} / ${maxHp} HP</div>`;
     }
     function updateBattle(room){renderFighter(room.p1,"p1");renderFighter(room.p2,"p2");$("round-num").textContent=room.round;}
 
@@ -1070,6 +1323,7 @@
         activeTaunt:playerProfile.activeTaunt||null,
         activeTrail:playerProfile.activeTrail||null,
         activeBorder:playerProfile.activeBorder||null,
+        isChampion:(window._myLeaderboardRank===1)||false,
       };
       await set(roomRef,{code,phase:"waiting",p1:p1data,p2:null,round:1,eventIdx:Math.floor(Math.random()*ROUND_EVENTS.length),allLogs:[],gameOver:false,winner:null,p1action:null,p2action:null,resolveState:"idle",wasLockedP1:false,wasLockedP2:false});
       stopLobbyListener(); saveSession(code,"p1");
@@ -1090,6 +1344,7 @@
         activeTaunt:playerProfile.activeTaunt||null,
         activeTrail:playerProfile.activeTrail||null,
         activeBorder:playerProfile.activeBorder||null,
+        isChampion:(window._myLeaderboardRank===1)||false,
       };
       await update(roomRef,{p2:p2data,phase:"battle"});
       stopLobbyListener(); saveSession(code,"p2"); listenRoom();
@@ -1152,12 +1407,21 @@
     async function handleGameOver(room){
       clearSession();
       if(currentUser&&room.p1&&room.p2){
-        const myData=myRole==="p1"?room.p1:room.p2;
-        const myCrits=myRole==="p1"?(room.lastP1Crits||0):(room.lastP2Crits||0);
-        const maxHp=ARMORS[myData.armor].hp;
-        let outcome=room.winner==="draw"?"draw":room.winner===myRole?"win":"loss";
+        const myData  = myRole==="p1"?room.p1:room.p2;
+        const oppData = myRole==="p1"?room.p2:room.p1;
+        const myCrits = myRole==="p1"?(room.lastP1Crits||0):(room.lastP2Crits||0);
+        const maxHp   = ARMORS[myData.armor].hp;
+        const outcome = room.winner==="draw"?"draw":room.winner===myRole?"win":"loss";
+        const rounds  = (room.allLogs?Object.values(room.allLogs):[]).filter(l=>l.type==="round").length;
+        const matchMeta={
+          oppName:  oppData.name,
+          myWeapon: myData.weapon,  myArmor:  myData.armor,
+          oppWeapon:oppData.weapon, oppArmor: oppData.armor,
+          oppHp:    Math.max(0,oppData.hp),
+          rounds,
+        };
         try{
-          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp);
+          const {total,rankBonus,xpEarned,leveledUp,newLevel}=await recordResult(currentUser.uid,myData.name,outcome,myCrits,myData.hp,maxHp,matchMeta);
           showResults(room,outcome,total,rankBonus,xpEarned,leveledUp,newLevel); return;
         }catch(e){console.error(e);}
       }
@@ -1285,6 +1549,8 @@
       $("btn-leaderboard-back").onclick=()=>showOnly("screen-setup");
       $("btn-shop").onclick=()=>{showOnly("screen-shop");buildShop();};
       $("btn-shop-back").onclick=()=>showOnly("screen-setup");
+      $("btn-stats").onclick=()=>{showOnly("screen-stats");buildStats();};
+      $("btn-stats-back").onclick=()=>showOnly("screen-setup");
       $("btn-create").onclick=()=>createRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor});
       $("btn-join").onclick  =()=>joinRoom({name:sel.name,weapon:sel.weapon,armor:sel.armor},$("join-code").value);
       $("btn-cancel-waiting").onclick=async()=>{
@@ -1332,6 +1598,22 @@
               sessionStorage.setItem("welcomed","1");
               showToast(`Welcome back, ${playerProfile.name}! Your stats have been restored.`);
             }
+            // #1 champion login stipend
+            try{
+              const snap=await get(ref(db,"players"));
+              if(snap.exists()){
+                const sorted=Object.entries(snap.val())
+                  .map(([id,p])=>({id,...p}))
+                  .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0));
+                if(sorted.length&&sorted[0].id===user.uid){
+                  const stipend=10;
+                  playerProfile.gold=(playerProfile.gold||0)+stipend;
+                  await update(ref(db,`players/${user.uid}`),{gold:playerProfile.gold});
+                  updateAuthUI(user);
+                  setTimeout(()=>showToast(`👑 Champion's tribute — +${stipend} gold`),1200);
+                }
+              }
+            }catch(e){}
           } else {
             // Brand new gladiator — show name prompt
             if(!myRole){ showOnly("screen-setup"); showNamePrompt(); }
@@ -1419,9 +1701,10 @@
       <div class="section-label">Enter the Arena</div>
       <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">⚔ Challenge a Player</button>
       <button class="btn btn-skirmish" id="btn-skirmish" disabled style="width:100%;margin-top:0.5rem">🤖 Skirmish vs CPU</button>
-      <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem">
+      <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem;flex-wrap:wrap">
         <button class="btn" id="btn-leaderboard" style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">🏆 Leaderboard</button>
         <button class="btn" id="btn-shop"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">⚙ Shop</button>
+        <button class="btn" id="btn-stats"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">📊 Stats</button>
         <a href="guide.html" class="btn"           style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7;text-decoration:none">📖 Guide</a>
       </div>
     </div>
@@ -1438,6 +1721,17 @@
         </div>
       </div>
       <div id="shop-items"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div id="screen-stats" style="display:none">
+    <div class="setup-card">
+      <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📊 Gladiator Stats</span>
+        <button class="btn" id="btn-stats-back" style="padding:0.3rem 1rem;font-size:0.65rem">← Back</button>
+      </div>
+      <div id="stats-content"></div>
     </div>
   </div>
 
