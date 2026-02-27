@@ -800,6 +800,8 @@ input[type="text"]::placeholder { color: var(--text-dim); font-style: italic; }
 }
 .lb-row:last-child { border-bottom: none; }
 .lb-row.lb-me { background: rgba(201,168,76,0.06); }
+.lb-row-clickable { cursor: pointer; transition: background 0.15s, box-shadow 0.15s; }
+.lb-row-clickable:hover { background: rgba(201,168,76,0.05); box-shadow: inset 0 0 0 1px rgba(201,168,76,0.2); }
 
 .lb-rank {
   font-size: 1rem;

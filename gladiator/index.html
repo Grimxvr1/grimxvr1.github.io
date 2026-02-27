@@ -147,7 +147,6 @@
     /* ── PLAYER PROFILE (in-memory cache) ────────────────────────────────── */
     const XP = { win:80, loss:15, draw:30, crit:10, lowHpBonus:25 };
     function xpForLevel(lvl){ return lvl*100; }
-    function totalXpForLevel(lvl){ return lvl*(lvl-1)/2*100; }
     function calcLevel(totalXp){
       let lvl=1, xpLeft=totalXp||0;
       while(xpLeft>=xpForLevel(lvl+1)){ xpLeft-=xpForLevel(lvl+1); lvl++; }
@@ -371,11 +370,6 @@
       applyActiveCursor();
     }
 
-    async function savePlayerProfile(uid, updates){
-      Object.assign(playerProfile,updates);
-      await update(ref(db,`players/${uid}`),updates);
-    }
-
     async function ensurePlayerExists(uid, name){
       const pRef=ref(db,`players/${uid}`);
       const snap=await get(pRef);
@@ -572,12 +566,12 @@
           const isOwned=owned.includes(item.id);
           const isSoon=item.cat==="soon";
           const isRename=item.cat==="rename";
-          const isActiveColor =playerProfile.activeColor ===item.value&&item.cat==="color";
+          const isActiveColor =playerProfile.activeColor ===item.value&&(item.cat==="color"||item.cat==="champ");
           const isActiveSymbol=playerProfile.activeSymbol===item.value&&item.cat==="symbol";
-          const isActiveBorder=playerProfile.activeBorder===item.value&&item.cat==="border";
+          const isActiveBorder=playerProfile.activeBorder===item.value&&(item.cat==="border"||item.cat==="champ");
           const isActiveTaunt =playerProfile.activeTaunt ===item.value&&item.cat==="taunt";
           const isActiveTrail =playerProfile.activeTrail ===item.value&&item.cat==="trail";
-          const isActiveCursor=playerProfile.activeCursor===item.value&&item.cat==="cursor";
+          const isActiveCursor=playerProfile.activeCursor===item.value&&(item.cat==="cursor"||item.cat==="champ");
           const isActive=isActiveColor||isActiveSymbol||isActiveBorder||isActiveTaunt||isActiveTrail||isActiveCursor;
           const canAfford=gold>=item.cost;
           const levelLocked=!isOwned&&(item.minLevel||1)>playerLevel;
@@ -625,24 +619,27 @@
 
           if(!isSoon&&!levelLocked&&!rankLocked){
             card.querySelector("button").onclick=async()=>{
+              // Resolve which profile field this item writes to
+              const fieldMap={color:"activeColor",symbol:"activeSymbol",border:"activeBorder",taunt:"activeTaunt",trail:"activeTrail",cursor:"activeCursor"};
+              // champ items: determine field by their id prefix
+              let itemCat=item.cat;
+              if(itemCat==="champ"){
+                if(item.id==="champ_color")  itemCat="color";
+                else if(item.id==="champ_cursor") itemCat="cursor";
+                else if(item.id==="champ_border") itemCat="border";
+              }
+              const field=fieldMap[itemCat];
+
               if(isActive){
                 const updates={};
-                if(item.cat==="color")  {updates.activeColor=null;  playerProfile.activeColor=null;}
-                if(item.cat==="symbol") {updates.activeSymbol=null; playerProfile.activeSymbol=null;}
-                if(item.cat==="border") {updates.activeBorder=null; playerProfile.activeBorder=null;}
-                if(item.cat==="taunt")  {updates.activeTaunt=null;  playerProfile.activeTaunt=null;}
-                if(item.cat==="trail")  {updates.activeTrail=null;  playerProfile.activeTrail=null;}
-                if(item.cat==="cursor") {updates.activeCursor=null; playerProfile.activeCursor=null; applyActiveCursor();}
+                if(field){updates[field]=null; playerProfile[field]=null;}
+                if(itemCat==="cursor") applyActiveCursor();
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser); showToast(`${item.name} deactivated.`);
               } else if(isOwned&&!isRename){
                 const updates={};
-                if(item.cat==="color")  {updates.activeColor=item.value;  playerProfile.activeColor=item.value;}
-                if(item.cat==="symbol") {updates.activeSymbol=item.value; playerProfile.activeSymbol=item.value;}
-                if(item.cat==="border") {updates.activeBorder=item.value; playerProfile.activeBorder=item.value;}
-                if(item.cat==="taunt")  {updates.activeTaunt=item.value;  playerProfile.activeTaunt=item.value;}
-                if(item.cat==="trail")  {updates.activeTrail=item.value;  playerProfile.activeTrail=item.value;}
-                if(item.cat==="cursor") {updates.activeCursor=item.value; playerProfile.activeCursor=item.value; applyActiveCursor();}
+                if(field){updates[field]=item.value; playerProfile[field]=item.value;}
+                if(itemCat==="cursor") applyActiveCursor();
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser); showToast(`${item.name} equipped!`);
               } else if(canAfford){
@@ -650,12 +647,8 @@
                 const newGold=(playerProfile.gold||0)-item.cost;
                 const newOwned=[...(playerProfile.owned||[]),item.id];
                 const updates={gold:newGold,owned:newOwned};
-                if(item.cat==="color")  {updates.activeColor=item.value;  playerProfile.activeColor=item.value;}
-                if(item.cat==="symbol") {updates.activeSymbol=item.value; playerProfile.activeSymbol=item.value;}
-                if(item.cat==="border") {updates.activeBorder=item.value; playerProfile.activeBorder=item.value;}
-                if(item.cat==="taunt")  {updates.activeTaunt=item.value;  playerProfile.activeTaunt=item.value;}
-                if(item.cat==="trail")  {updates.activeTrail=item.value;  playerProfile.activeTrail=item.value;}
-                if(item.cat==="cursor") {updates.activeCursor=item.value; playerProfile.activeCursor=item.value; applyActiveCursor();}
+                if(field){updates[field]=item.value; playerProfile[field]=item.value;}
+                if(itemCat==="cursor") applyActiveCursor();
                 playerProfile.gold=newGold; playerProfile.owned=newOwned;
                 await update(ref(db,`players/${currentUser.uid}`),updates);
                 buildShop(); updateAuthUI(currentUser);
@@ -683,8 +676,8 @@
     }
 
     /* ── STATS ────────────────────────────────────────────────────────────── */
-    function buildStats(){
-      const p=playerProfile;
+    function buildStats(p, viewerMode=false){
+      if(!p) p=playerProfile;
       const total=(p.wins||0)+(p.losses||0)+(p.draws||0);
       const winRate=total>0?Math.round(((p.wins||0)/total)*100):0;
       const {level,xpIntoLevel,xpNeeded}=calcLevel(p.xp||0);
@@ -721,6 +714,17 @@
           return h<1?"Just now":`${h}h ago`;
         }
         return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      }
+
+      // Update header label and back button behaviour for viewer mode
+      const statsLabel=$("stats-screen-label");
+      const statsBack=$("btn-stats-back");
+      if(viewerMode){
+        if(statsLabel) statsLabel.textContent=`📊 ${p.name||"Gladiator"}'s Stats`;
+        if(statsBack){ statsBack.textContent="← Leaderboard"; statsBack.onclick=()=>{showOnly("screen-leaderboard");showLeaderboard();}; }
+      } else {
+        if(statsLabel) statsLabel.textContent="📊 Gladiator Stats";
+        if(statsBack){ statsBack.textContent="← Back"; statsBack.onclick=()=>showOnly("screen-setup"); }
       }
 
       const wrap=$("stats-content");
@@ -869,7 +873,7 @@
       const glowClass=["lb-rank-1","lb-rank-2","lb-rank-3"];
       board.forEach((p,i)=>{
         const row=document.createElement("div");
-        row.className=`lb-row${p.uid===currentUser?.uid?" lb-me":""}${i<3?" "+glowClass[i]:""}`;
+        row.className=`lb-row lb-row-clickable${p.uid===currentUser?.uid?" lb-me":""}${i<3?" "+glowClass[i]:""}`;
         const bStyle=p.activeBorder?BORDER_STYLES[p.activeBorder]||"":"";
         const displayName=`<span class="lb-name-inner"${bStyle?` style="${bStyle}"`:""}>${formatDisplayName(p.name||"Unknown",p)}</span>`;
         const lvl=p.level||calcLevel(p.xp||0).level;
@@ -881,6 +885,18 @@
           <div class="lb-level">Lv. ${lvl}</div>
           <div class="lb-wins">${p.wins||0}W / ${p.losses||0}L</div>
           <div class="lb-gold">⚙ ${p.gold||0}</div>`;
+        row.onclick=async()=>{
+          // Fetch fresh data for this player then show their stats
+          try{
+            const snap=await get(ref(db,`players/${p.uid}`));
+            const data=snap.exists()?{uid:p.uid,...snap.val()}:p;
+            showOnly("screen-stats");
+            buildStats(data, true);
+          }catch(e){
+            showOnly("screen-stats");
+            buildStats(p, true);
+          }
+        };
         wrap.appendChild(row);
       });
     }
@@ -900,26 +916,9 @@
     const CPU_NAMES = ["Arena Sentinel","Iron Shade","The Executioner","Vael the Merciless",
                        "Brutus Rex","Dusk Reaver","Cinder Fang","The Pale Champion"];
 
-    // Weighted AI: tracks player's last 3 moves and counter-picks with 50% probability
-    let cpuMemory = [];
-    function cpuPickAction(lockedAction) {
-      if(lockedAction) return lockedAction; // heavy armor: locked in
-      const actions = ["hit","block","dodge"];
-      // Count player's recent moves
-      if(cpuMemory.length >= 2){
-        const freq = {hit:0,block:0,dodge:0};
-        cpuMemory.forEach(m=>freq[m]++);
-        const mostUsed = actions.sort((a,b)=>freq[b]-freq[a])[0];
-        // 55% chance to counter the most-used move
-        if(Math.random()<0.55) return BEATS[mostUsed]; // BEATS[x] = what beats x... wait, BEATS maps action to what it beats
-        // Actually BEATS[hit]=dodge means hit BEATS dodge. So to COUNTER hit, pick block.
-        // Counter map: what beats each action
-      }
-      return actions[Math.floor(Math.random()*3)];
-    }
-
     // Counter map: given player's likely action, what should CPU pick to beat it?
     const COUNTER = { hit:"block", block:"dodge", dodge:"hit" };
+    let cpuMemory = [];
 
     function cpuPickActionSmart(lockedAction){
       if(lockedAction) return lockedAction;
@@ -1751,7 +1750,7 @@
   <div id="screen-stats" style="display:none">
     <div class="setup-card">
       <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
-        <span>📊 Gladiator Stats</span>
+        <span id="stats-screen-label">📊 Gladiator Stats</span>
         <button class="btn" id="btn-stats-back" style="padding:0.3rem 1rem;font-size:0.65rem">← Back</button>
       </div>
       <div id="stats-content"></div>
