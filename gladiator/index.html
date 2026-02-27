@@ -1198,7 +1198,11 @@
     /* ── DOM ──────────────────────────────────────────────────────────────── */
     const $=id=>document.getElementById(id);
     const SCREENS=["screen-setup","screen-lobby","screen-leaderboard","screen-shop","screen-stats","screen-waiting","screen-battle","screen-results"];
-    const showOnly=id=>SCREENS.forEach(s=>$(s).style.display=s===id?"":"none");
+    const showOnly=id=>{
+      SCREENS.forEach(s=>$(s).style.display=s===id?"":"none");
+      const np=$("nav-panel");
+      if(np) np.style.display=id==="screen-setup"?"":"none";
+    };
 
     /* ── LOBBY ────────────────────────────────────────────────────────────── */
     let lobbyUnsub=null;
@@ -1271,8 +1275,8 @@
     function showRevealCountdown(room,onDone){
       const am1=ACTION_META[room.p1action],am2=ACTION_META[room.p2action];
       $("action-picker").style.display="none";$("action-status").style.display="none";$("action-waiting").style.display="";
-      $("action-waiting").innerHTML=`<div class="reveal-choices"><div class="reveal-choice"><div class="reveal-emoji">${am1.emoji}</div><div class="reveal-label">${am1.label}</div><div class="reveal-name">${room.p1.name}</div></div><div class="reveal-vs"><div class="reveal-countdown">⚔</div></div><div class="reveal-choice"><div class="reveal-emoji">${am2.emoji}</div><div class="reveal-label">${am2.label}</div><div class="reveal-name">${room.p2.name}</div></div></div>`;
-      setTimeout(onDone,600);
+      $("action-waiting").innerHTML=`<div class="reveal-choices"><div class="reveal-choice reveal-choice-p1"><div class="reveal-emoji">${am1.emoji}</div><div class="reveal-label">${am1.label}</div><div class="reveal-name">${room.p1.name}</div></div><div class="reveal-vs"><div class="reveal-countdown">⚔</div></div><div class="reveal-choice reveal-choice-p2"><div class="reveal-emoji">${am2.emoji}</div><div class="reveal-label">${am2.label}</div><div class="reveal-name">${room.p2.name}</div></div></div>`;
+      setTimeout(onDone,2200);
     }
 
     /* ── STATE ────────────────────────────────────────────────────────────── */
@@ -1545,6 +1549,13 @@
       $("btn-skirmish").onclick=()=>startSkirmish();
       $("btn-to-lobby").onclick=()=>{showOnly("screen-lobby");startLobbyListener();};
       $("btn-lobby-back").onclick=()=>{stopLobbyListener();showOnly("screen-setup");};
+      $("btn-nav-toggle").onclick=()=>{
+        const drawer=$("nav-drawer");
+        const open=drawer.style.display==="none";
+        drawer.style.display=open?"":"none";
+        $("nav-toggle-arrow").textContent=open?"▲":"▼";
+        $("btn-nav-toggle").setAttribute("aria-expanded",open);
+      };
       $("btn-leaderboard").onclick=()=>{showOnly("screen-leaderboard");showLeaderboard();};
       $("btn-leaderboard-back").onclick=()=>showOnly("screen-setup");
       $("btn-shop").onclick=()=>{showOnly("screen-shop");buildShop();};
@@ -1598,7 +1609,7 @@
               sessionStorage.setItem("welcomed","1");
               showToast(`Welcome back, ${playerProfile.name}! Your stats have been restored.`);
             }
-            // #1 champion login stipend
+            // #1 champion login stipend — 100 gold once per calendar day
             try{
               const snap=await get(ref(db,"players"));
               if(snap.exists()){
@@ -1606,11 +1617,15 @@
                   .map(([id,p])=>({id,...p}))
                   .sort((a,b)=>(b.wins||0)-(a.wins||0)||(b.gold||0)-(a.gold||0));
                 if(sorted.length&&sorted[0].id===user.uid){
-                  const stipend=10;
-                  playerProfile.gold=(playerProfile.gold||0)+stipend;
-                  await update(ref(db,`players/${user.uid}`),{gold:playerProfile.gold});
-                  updateAuthUI(user);
-                  setTimeout(()=>showToast(`👑 Champion's tribute — +${stipend} gold`),1200);
+                  const today=new Date().toISOString().slice(0,10);
+                  if(playerProfile.lastChampionStipend!==today){
+                    const stipend=100;
+                    playerProfile.gold=(playerProfile.gold||0)+stipend;
+                    playerProfile.lastChampionStipend=today;
+                    await update(ref(db,`players/${user.uid}`),{gold:playerProfile.gold,lastChampionStipend:today});
+                    updateAuthUI(user);
+                    setTimeout(()=>showToast(`👑 Champion's tribute — +${stipend} gold`),1200);
+                  }
                 }
               }
             }catch(e){}
@@ -1678,6 +1693,20 @@
 
   <div id="auth-bar" class="auth-bar"></div>
 
+  <!-- COLLAPSIBLE NAV -->
+  <div id="nav-panel" class="nav-panel">
+    <button class="nav-toggle" id="btn-nav-toggle" aria-expanded="false">
+      <span id="nav-toggle-label">☰ Menu</span>
+      <span id="nav-toggle-arrow" class="nav-arrow">▼</span>
+    </button>
+    <div id="nav-drawer" class="nav-drawer" style="display:none">
+      <button class="btn nav-btn" id="btn-leaderboard">🏆 Leaderboard</button>
+      <button class="btn nav-btn" id="btn-shop">⚙ Shop</button>
+      <button class="btn nav-btn" id="btn-stats">📊 Stats</button>
+      <a href="guide.html" class="btn nav-btn" style="text-decoration:none">📖 Guide</a>
+    </div>
+  </div>
+
   <!-- SETUP -->
   <div id="screen-setup">
     <div class="setup-card">
@@ -1701,12 +1730,6 @@
       <div class="section-label">Enter the Arena</div>
       <button class="btn btn-fight" id="btn-to-lobby" disabled style="width:100%">⚔ Challenge a Player</button>
       <button class="btn btn-skirmish" id="btn-skirmish" disabled style="width:100%;margin-top:0.5rem">🤖 Skirmish vs CPU</button>
-      <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem;flex-wrap:wrap">
-        <button class="btn" id="btn-leaderboard" style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">🏆 Leaderboard</button>
-        <button class="btn" id="btn-shop"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">⚙ Shop</button>
-        <button class="btn" id="btn-stats"         style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7">📊 Stats</button>
-        <a href="guide.html" class="btn"           style="font-size:0.65rem;padding:0.4rem 1.2rem;opacity:0.7;text-decoration:none">📖 Guide</a>
-      </div>
     </div>
   </div>
 
