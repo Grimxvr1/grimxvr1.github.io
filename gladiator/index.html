@@ -23,18 +23,18 @@
 
     /* ── GAME CONSTANTS ───────────────────────────────────────────────────── */
     const WEAPONS = {
-      greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[16,26], strongAgainst:["spear","flail"],           weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
-      maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[16,26], strongAgainst:["greatsword","warAxe"],      weakAgainst:["spear","crossbow"],        flavor:"bludgeons",  blockChance:0.25 },
-      spear:       { name:"War Spear",     emoji:"🗡️",  desc:"Long reach, keep enemies at bay",    baseDamage:[16,26], strongAgainst:["maceShield","dualblades"],  weakAgainst:["greatsword","warAxe"],     flavor:"pierces" },
-      dualblades:  { name:"Dual Blades",   emoji:"🔪",  desc:"Twin daggers, fast and deadly",       baseDamage:[16,26],  strongAgainst:["greatsword","crossbow"],    weakAgainst:["spear","morningstar"],     flavor:"slashes" },
-      warAxe:      { name:"War Axe",       emoji:"🪓",  desc:"Heavy axe, brutal power",             baseDamage:[16,26], strongAgainst:["spear","flail"],           weakAgainst:["maceShield","dualblades"], flavor:"hacks at" },
-      morningstar: { name:"Morningstar",   emoji:"💥",  desc:"Spiked flail, armor-crushing",        baseDamage:[16,26], strongAgainst:["dualblades","maceShield"],  weakAgainst:["greatsword","warAxe"],    flavor:"smashes",   armorPierce:0.2 },
-      crossbow:    { name:"Crossbow",      emoji:"🏹",  desc:"Ranged bolts, hard to dodge",         baseDamage:[16,26], strongAgainst:["maceShield","morningstar"], weakAgainst:["dualblades","flail"],      flavor:"shoots" },
-      flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[16,26], strongAgainst:["crossbow","dualblades"],    weakAgainst:["greatsword","spear"],     flavor:"lashes",    shieldBreak:true },
+      greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[15,25], strongAgainst:["spear","flail"],           weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
+      maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[10,18], strongAgainst:["greatsword","warAxe"],      weakAgainst:["spear","crossbow"],        flavor:"bludgeons",  blockChance:0.25 },
+      spear:       { name:"War Spear",     emoji:"🗡️",  desc:"Long reach, keep enemies at bay",    baseDamage:[14,22], strongAgainst:["maceShield","dualblades"],  weakAgainst:["greatsword","warAxe"],     flavor:"pierces" },
+      dualblades:  { name:"Dual Blades",   emoji:"🔪",  desc:"Twin daggers, fast and deadly",       baseDamage:[11,18], strongAgainst:["greatsword","crossbow"],    weakAgainst:["spear","morningstar"],     flavor:"slashes" },
+      warAxe:      { name:"War Axe",       emoji:"🪓",  desc:"Heavy axe, brutal power",             baseDamage:[14,23], strongAgainst:["spear","flail"],           weakAgainst:["maceShield","dualblades"], flavor:"hacks at" },
+      morningstar: { name:"Morningstar",   emoji:"💥",  desc:"Spiked flail, armor-crushing",        baseDamage:[13,21], strongAgainst:["dualblades","maceShield"],  weakAgainst:["greatsword","warAxe"],    flavor:"smashes",   armorPierce:0.2 },
+      crossbow:    { name:"Crossbow",      emoji:"🏹",  desc:"Ranged bolts, hard to dodge",         baseDamage:[15,24], strongAgainst:["maceShield","morningstar"], weakAgainst:["dualblades","flail"],      flavor:"shoots" },
+      flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[12,22], strongAgainst:["crossbow","dualblades"],    weakAgainst:["greatsword","spear"],     flavor:"lashes",    shieldBreak:true },
     };
     const ARMORS = {
-      heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"Your chosen move repeats automatically next round.", hp:160, defense:0.28 },
-      medium: { name:"Chainmail",   emoji:"🔗", desc:"Balanced HP and defense. No special effect.", hp:120, defense:0.15 },
+      heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"Your chosen move repeats automatically next round.", hp:145, defense:0.22 },
+      medium: { name:"Chainmail",   emoji:"🔗", desc:"Balanced HP and defense. No special effect.", hp:120, defense:0.18 },
       light:  { name:"Leather",     emoji:"🦺", desc:"Strikes twice per round — double the hits, double the risk.", hp:85,  defense:0.05 },
     };
     const ROUND_EVENTS = [
@@ -175,6 +175,11 @@
 
     function calcDmg(attacker,defender,effect){
       const w=WEAPONS[attacker.weapon], da=ARMORS[defender.armor];
+      const dw=WEAPONS[defender.weapon];
+      // Mace & Shield: 25% block chance — negates the hit entirely (not vs shieldBreak weapons)
+      if(dw.blockChance&&!w.shieldBreak&&Math.random()<dw.blockChance){
+        return {dmg:0,crit:false,blocked:true};
+      }
       let [dMin,dMax]=w.baseDamage;
       if(w.strongAgainst.includes(defender.weapon)){dMin=Math.floor(dMin*1.3);dMax=Math.floor(dMax*1.3);}
       if(w.weakAgainst.includes(defender.weapon))  {dMin=Math.floor(dMin*0.7);dMax=Math.floor(dMax*0.7);}
@@ -186,7 +191,7 @@
       if(isCrit)dmg=Math.floor(dmg*2);
       let dr=da.defense;
       if(w.armorPierce)dr*=(1-w.armorPierce);
-      return {dmg:Math.max(1,Math.floor(dmg*(1-dr))),crit:isCrit};
+      return {dmg:Math.max(1,Math.floor(dmg*(1-dr))),crit:isCrit,blocked:false};
     }
 
     function processRound(state){
@@ -221,7 +226,12 @@
 
       // Helper: apply one strike from attacker → defender
       function applyStrike(attacker, defender, isP1Attacking, strikeNum){
-        let {dmg,crit}=calcDmg(attacker,defender,effect);
+        let {dmg,crit,blocked}=calcDmg(attacker,defender,effect);
+        if(blocked){
+          logs.push(mkLog("block",attacker.name,WEAPONS[attacker.weapon].name,ARMORS[attacker.armor].name,
+            `${defender.name} raises their shield — the blow is deflected!`));
+          return 0;
+        }
         if(isP1Attacking){
           if(effect==="dagger"&&daggerLucky==="p1"&&strikeNum===1)dmg+=event.bonus;
           if(effect==="execute"&&executeLucky==="p1"&&strikeNum===1)dmg+=event.bonus;
@@ -1051,7 +1061,11 @@
       const w=room.winner;
       const wd=w==="p1"?room.p1:w==="p2"?room.p2:null;
       $("victor-label").textContent=w==="draw"?"The gods are unsatisfied —":"The Victor Stands";
-      $("victor-name").textContent =w==="draw"?"DRAW":wd.name;
+      const victorEl=$("victor-name");
+      victorEl.textContent=w==="draw"?"DRAW":wd.name;
+      victorEl.className="victor-name";
+      victorEl.removeAttribute("style");
+      if(wd?.activeTrail) victorEl.classList.add(`trail-${wd.activeTrail}`);
       $("victor-sub").textContent  =wd?`${WEAPONS[wd.weapon].emoji} ${WEAPONS[wd.weapon].name} · ${ARMORS[wd.armor].name}`:"";
       $("result-p1-hp").textContent =`${Math.max(0,room.p1.hp)} HP`;
       $("result-p1-name").textContent=room.p1.name;
