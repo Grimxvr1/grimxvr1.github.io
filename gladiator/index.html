@@ -23,14 +23,14 @@
 
     /* ── GAME CONSTANTS ───────────────────────────────────────────────────── */
     const WEAPONS = {
-      greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[18,28], strongAgainst:["spear","flail"],           weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
-      maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[10,18], strongAgainst:["greatsword","warAxe"],      weakAgainst:["spear","crossbow"],        flavor:"bludgeons",  blockChance:0.25 },
-      spear:       { name:"War Spear",     emoji:"🗡️",  desc:"Long reach, keep enemies at bay",    baseDamage:[14,22], strongAgainst:["maceShield","dualblades"],  weakAgainst:["greatsword","warAxe"],     flavor:"pierces" },
-      dualblades:  { name:"Dual Blades",   emoji:"🔪",  desc:"Twin daggers, fast and deadly",       baseDamage:[9,16],  strongAgainst:["greatsword","crossbow"],    weakAgainst:["spear","morningstar"],     flavor:"slashes" },
+      greatsword:  { name:"Greatsword",    emoji:"⚔️",  desc:"Massive two-handed blade",          baseDamage:[16,26], strongAgainst:["spear","flail"],           weakAgainst:["dualblades","maceShield"], flavor:"cleaves through" },
+      maceShield:  { name:"Mace & Shield", emoji:"🛡️",  desc:"One-handed mace with heavy shield",  baseDamage:[16,26], strongAgainst:["greatsword","warAxe"],      weakAgainst:["spear","crossbow"],        flavor:"bludgeons",  blockChance:0.25 },
+      spear:       { name:"War Spear",     emoji:"🗡️",  desc:"Long reach, keep enemies at bay",    baseDamage:[16,26], strongAgainst:["maceShield","dualblades"],  weakAgainst:["greatsword","warAxe"],     flavor:"pierces" },
+      dualblades:  { name:"Dual Blades",   emoji:"🔪",  desc:"Twin daggers, fast and deadly",       baseDamage:[16,26],  strongAgainst:["greatsword","crossbow"],    weakAgainst:["spear","morningstar"],     flavor:"slashes" },
       warAxe:      { name:"War Axe",       emoji:"🪓",  desc:"Heavy axe, brutal power",             baseDamage:[16,26], strongAgainst:["spear","flail"],           weakAgainst:["maceShield","dualblades"], flavor:"hacks at" },
-      morningstar: { name:"Morningstar",   emoji:"💥",  desc:"Spiked flail, armor-crushing",        baseDamage:[13,21], strongAgainst:["dualblades","maceShield"],  weakAgainst:["greatsword","warAxe"],    flavor:"smashes",   armorPierce:0.2 },
-      crossbow:    { name:"Crossbow",      emoji:"🏹",  desc:"Ranged bolts, hard to dodge",         baseDamage:[15,24], strongAgainst:["maceShield","morningstar"], weakAgainst:["dualblades","flail"],      flavor:"shoots" },
-      flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[12,22], strongAgainst:["crossbow","dualblades"],    weakAgainst:["greatsword","spear"],     flavor:"lashes",    shieldBreak:true },
+      morningstar: { name:"Morningstar",   emoji:"💥",  desc:"Spiked flail, armor-crushing",        baseDamage:[16,26], strongAgainst:["dualblades","maceShield"],  weakAgainst:["greatsword","warAxe"],    flavor:"smashes",   armorPierce:0.2 },
+      crossbow:    { name:"Crossbow",      emoji:"🏹",  desc:"Ranged bolts, hard to dodge",         baseDamage:[16,26], strongAgainst:["maceShield","morningstar"], weakAgainst:["dualblades","flail"],      flavor:"shoots" },
+      flail:       { name:"Chain Flail",   emoji:"⛓️",  desc:"Unpredictable, bypasses shields",     baseDamage:[16,26], strongAgainst:["crossbow","dualblades"],    weakAgainst:["greatsword","spear"],     flavor:"lashes",    shieldBreak:true },
     };
     const ARMORS = {
       heavy:  { name:"Heavy Plate", emoji:"🔩", desc:"Your chosen move repeats automatically next round.", hp:160, defense:0.28 },
